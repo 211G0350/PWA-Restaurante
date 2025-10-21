@@ -5,7 +5,7 @@ namespace PWA_Restaurante.Models.Entities;
 
 public partial class Usuarios
 {
-    public ulong Id { get; set; }
+    public int Id { get; set; }
 
     public string Nombre { get; set; } = null!;
 
