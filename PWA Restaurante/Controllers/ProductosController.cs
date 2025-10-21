@@ -145,7 +145,7 @@ namespace PWA_Restaurante.Controllers
 			if (_validator.ValidateEliminar(id, out List<string> errores))
 			{
 				var producto = _repository.GetAll().FirstOrDefault(p => p.Id == id);
-				_repository.Delete(producto);
+				_repository.Delete(producto.Id);
 				return Ok(new { message = "Producto eliminado exitosamente" });
 			}
 			else
