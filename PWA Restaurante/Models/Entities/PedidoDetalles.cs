@@ -5,13 +5,13 @@ namespace PWA_Restaurante.Models.Entities;
 
 public partial class PedidoDetalles
 {
-    public ulong Id { get; set; }
+    public int Id { get; set; }
 
-    public ulong PedidoId { get; set; }
+    public int PedidoId { get; set; }
 
-    public ulong ProductoId { get; set; }
+    public int ProductoId { get; set; }
 
-    public uint Cantidad { get; set; }
+    public int Cantidad { get; set; }
 
     public decimal PrecioUnitario { get; set; }
 

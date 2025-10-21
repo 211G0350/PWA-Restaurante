@@ -5,7 +5,7 @@ namespace PWA_Restaurante.Models.Entities;
 
 public partial class Productos
 {
-    public ulong Id { get; set; }
+    public int Id { get; set; }
 
     public string Nombre { get; set; } = null!;
 
@@ -15,7 +15,7 @@ public partial class Productos
 
     public string? Descripcion { get; set; }
 
-    public ushort TiempoPreparacion { get; set; }
+    public int TiempoPreparacion { get; set; }
 
     public string? ImagenProducto { get; set; }
 
