@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalles de Orden</title>
+    <link rel="stylesheet" href="estilos.css">
+</head>
+<style>
+    body {
+        font-family: "Poppins", sans-serif;
+        background-color: #f4a460;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+    }
+    
+    .modal {
+        width: 600px;
+        background-color: #f4a460;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+    
+    .modal-header {
+        background-color: #e96b26;
+        color: white;
+        padding: 10px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .cerrar {
+        font-size: 22px;
+        cursor: pointer;
+    }
+    
+    .modal-body {
+        padding: 20px;
+    }
+    
+    .info-principal {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 15px;
+        gap: 21px 94px;
+    }
+    
+    .columna p {
+        margin: 5px 0;
+    }
+    
+    .estado {
+        background-color: #d0d9e1;
+        padding: 3px 8px;
+        border-radius: 5px;
+    }
+    
+    .notas {
+        flex-grow: 1;
+        margin-left: 15px;
+    }
+    
+    textarea {
+        width: 100%;
+        border: 1px solid #999;
+        border-radius: 5px;
+        resize: none;
+        font-family: inherit;
+        padding: 5px;
+    }
+    
+    h3 {
+        margin-top: 15px;
+        color: white;
+    }
+    
+    .producto {
+        display: flex;
+        justify-content: space-between;
+        background-color: white;
+        border-radius: 8px;
+        padding: 10px 15px;
+        margin-top: 10px;
+    }
+    
+    .nombre {
+        font-weight: bold;
+        margin-bottom: 3px;
+    }
+    
+    .cantidad {
+        font-size: 14px;
+        color: #555;
+    }
+    
+    .precio {
+        text-align: right;
+    }
+    
+    .precio .total {
+        color: #28a745;
+        font-weight: bold;
+    }
+    
+    .precio .unitario {
+        font-size: 13px;
+        color: #666;
+    }
+    
+    .total-container {
+        background-color: white;
+        border-radius: 8px;
+        padding: 8px 15px;
+        width: fit-content;
+        margin-left: auto;
+        margin-top: 15px;
+        font-size: 18px;
+        color: black;
+    }
+    
+    .total-container strong {
+        color: #28a745;
+        margin-left: 5px;
+    }
+    
+</style>
+<body>
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Detalles de Orden #2</h2>
+            <span class="cerrar">&times;</span>
+        </div>
+
+        <div class="modal-body">
+            <div class="info-principal">
+                <div class="columna">
+                    <p><strong>🪑 Mesa</strong><br>3</p>
+                    <p><strong>👨‍🍳 Mesero</strong><br>Leonardo</p>
+                </div>
+
+                <div class="columna">
+                    <p><strong>🕒 Hora</strong><br>21/09/2025, 12:20</p>
+                    <p><strong>Estado</strong><br><span class="estado">Recibido</span></p>
+                </div>
+
+                <div class="notas">
+                    <label for="notas">Notas</label><br>
+                    <textarea id="notas" rows="4"></textarea>
+                </div>
+            </div>
+
+            <h3>Productos</h3>
+
+            <div class="producto">
+                <div class="detalles">
+                    <p class="nombre">Café Americano</p>
+                    <p class="cantidad">Cantidad: 1</p>
+                </div>
+                <div class="precio">
+                    <p class="total">$2.50</p>
+                    <p class="unitario">Precio unitario: $2.50</p>
+                </div>
+            </div>
+
+            <div class="producto">
+                <div class="detalles">
+                    <p class="nombre">Refresco</p>
+                    <p class="cantidad">Cantidad: 1</p>
+                </div>
+                <div class="precio">
+                    <p class="total">$2.00</p>
+                    <p class="unitario">Precio unitario: $2.00</p>
+                </div>
+            </div>
+
+            <div class="total-container">
+                <span>Total:</span>
+                <strong>$4.50</strong>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

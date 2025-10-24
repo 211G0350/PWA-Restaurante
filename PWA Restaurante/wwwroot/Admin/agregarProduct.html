@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Admin - Productos</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  body {
+    margin: 0;
+    font-family: "Comic Sans MS", sans-serif;
+    background-color: #f4a460;
+  }
+
+  /* ENCABEZADO */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid #b46525;
+    background-color: #f7ca9c;
+    height: 70px;
+  }
+
+  .panel-left {
+    display: flex;
+    align-items: center;
+    background-color: #b46525;
+    color: white;
+    padding: 10px 20px;
+    width: 220px;
+  }
+
+  .panel-left i {
+    font-size: 30px;
+    margin-right: 10px;
+  }
+
+  .panel-left div {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel-left h2 {
+    font-size: 16px;
+    margin: 0;
+  }
+
+  .panel-left p {
+    margin: 0;
+    font-size: 13px;
+    color: #f7e7d1;
+  }
+
+  .nav-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 60px;
+    flex: 1;
+  }
+
+  .nav-center a {
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #1b47b2;
+  }
+
+  .nav-center a i {
+    color: #b46525;
+    font-size: 22px;
+  }
+
+  .nav-center a:hover {
+    text-decoration: underline;
+  }
+
+  .panel-right {
+    background-color: #b46525;
+    padding: 10px 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+  }
+
+  .panel-right button {
+    background: none;
+    border: none;
+    color: white;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .panel-right button:hover {
+    text-decoration: underline;
+  }
+
+  /* CONTENIDO PRINCIPAL */
+  main {
+    padding: 20px 40px;
+  }
+
+  /* Botón agregar */
+  .add-product-container {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 15px;
+  }
+
+  .add-product-btn {
+    background-color: #a4c6ff;
+    border: 2px solid #6c91d7;
+    color: black;
+    font-weight: bold;
+    border-radius: 8px;
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+
+  .add-product-btn:hover {
+    background-color: #c2d9ff;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    justify-content: center;
+    background-color: #fff1da;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 12px 0;
+    border: 1px solid #555;
+    font-weight: bold;
+    cursor: pointer;
+    background-color: #f9f3eb;
+  }
+
+  .tab.active {
+    background-color: #a4c6ff;
+    border-bottom: none;
+  }
+
+  /* GRID DE PRODUCTOS */
+  .productos-grid {
+    margin: 14px;
+    display: grid
+;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 20px;
+    background-color: white;
+  }
+
+  .producto-card {
+    background-color: #fff;
+    border: 2px solid #d2b48c;
+    border-radius: 8px;
+    padding: 10px 15px;
+    box-shadow: 0px 2px 5px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .producto-card img {
+    width: 70px;
+    height: 70px;
+    object-fit: cover;
+    align-self: flex-end;
+    border-radius: 6px;
+  }
+
+  .producto-info {
+    flex-grow: 1;
+  }
+
+  .producto-info h4 {
+    margin: 5px 0 0 0;
+  }
+
+  .producto-info p {
+    margin: 2px 0;
+    font-size: 14px;
+  }
+
+  .precio {
+    color: #2e8b57;
+    font-weight: bold;
+    font-size: 18px;
+  }
+
+  .tiempo {
+    color: gray;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .acciones {
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .acciones button {
+    background-color: #f37021;
+    border: none;
+    color: white;
+    font-weight: bold;
+    border-radius: 6px;
+    padding: 6px 14px;
+    cursor: pointer;
+  }
+
+  .acciones button:hover {
+    background-color: #ff944d;
+  }
+
+  .acciones .eliminar {
+    background-color: #e74c3c;
+  }
+
+  .acciones .eliminar:hover {
+    background-color: #ff6b5b;
+  }
+
+</style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="panel-left">
+      <i class="fa-solid fa-user"></i>
+      <div>
+        <h2>Panel Admin</h2>
+        <p>Bienvenido</p>
+      </div>
+    </div>
+
+    <div class="nav-center">
+      <a href="#"><i class="fa-solid fa-users"></i> Usuarios</a>
+      <a href="#" class="active"><i class="fa-solid fa-burger"></i> Productos</a>
+    </div>
+
+    <div class="panel-right">
+      <button><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
+    </div>
+  </header>
+
+  <!-- CONTENIDO -->
+  <main>
+    <div class="add-product-container">
+      <button class="add-product-btn">Agregar Producto <i class="fa-solid fa-plus"></i></button>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <div class="tab active">Bebidas</div>
+      <div class="tab">Comidas</div>
+      <div class="tab">Ensaladas</div>
+    </div>
+
+    <!-- PRODUCTOS -->
+    <div class="productos-grid">
+      <div class="producto-card">
+        <div class="producto-info">
+          <h4>Agua Natural</h4>
+          <p>Agua purificada</p>
+          <p>Categoría: Bebidas</p>
+          <p class="precio">$1.50</p>
+          <p class="tiempo"><i class="fa-regular fa-clock"></i> 2 min</p>
+        </div>
+        <img src="https://cdn-icons-png.flaticon.com/512/1047/1047711.png" alt="Agua">
+        <div class="acciones">
+          <button>Editar</button>
+          <button class="eliminar">Eliminar</button>
+        </div>
+      </div>
+
+      <div class="producto-card">
+        <div class="producto-info">
+          <h4>Café Americano</h4>
+          <p>Café negro tradicional</p>
+          <p>Categoría: Bebidas</p>
+          <p class="precio">$2.50</p>
+          <p class="tiempo"><i class="fa-regular fa-clock"></i> 5 min</p>
+        </div>
+        <img src="https://cdn-icons-png.flaticon.com/512/924/924514.png" alt="Café">
+        <div class="acciones">
+          <button>Editar</button>
+          <button class="eliminar">Eliminar</button>
+        </div>
+      </div>
+
+      <div class="producto-card">
+        <div class="producto-info">
+          <h4>Cappuccino</h4>
+          <p>Café con leche espumada</p>
+          <p>Categoría: Bebidas</p>
+          <p class="precio">$3.00</p>
+          <p class="tiempo"><i class="fa-regular fa-clock"></i> 7 min</p>
+        </div>
+        <img src="https://cdn-icons-png.flaticon.com/512/760/760606.png" alt="Cappuccino">
+        <div class="acciones">
+          <button>Editar</button>
+          <button class="eliminar">Eliminar</button>
+        </div>
+      </div>
+
+      <div class="producto-card">
+        <div class="producto-info">
+          <h4>Refresco</h4>
+          <p>Bebida gaseosa variada</p>
+          <p>Categoría: Bebidas</p>
+          <p class="precio">$2.00</p>
+          <p class="tiempo"><i class="fa-regular fa-clock"></i> 3 min</p>
+        </div>
+        <img src="https://cdn-icons-png.flaticon.com/512/3128/3128208.png" alt="Refresco">
+        <div class="acciones">
+          <button>Editar</button>
+          <button class="eliminar">Eliminar</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+</body>
+</html>

@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Crear Nueva Orden</title>
+
+  <!-- Fuente similar a la de la imagen -->
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<style>
+    :root{
+        --orange-dark: #e95a21;    /* header / botones */
+        --orange-mid: #f07a2f;
+        --bg: #f5b779;             /* fondo general */
+        --panel: #f4a460;          /* panel interno */
+        --card-bg: #ffffff;
+        --muted: #6d6d6d;
+        --green: #14b75b;
+        --blue: #4a86e8;
+        --shadow: rgba(0,0,0,0.08);
+        --radius: 8px;
+        font-family: 'Rubik', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      }
+      
+      *{box-sizing:border-box}
+      body{
+        margin:0;
+        background: linear-gradient(180deg, #f4a460 80%);
+        min-height:100vh;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding:24px;
+      }
+      
+      /* contenedor modal estilo "canvas" */
+      .overlay{
+        width:100%;
+        display:flex;
+        justify-content:center;
+      }
+      .modal{
+        width:1100px;
+        background:#f4a460  ;
+        border-radius:6px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+        overflow:hidden;
+        border:6px solid rgba(0,0,0,0.02);
+      }
+      
+      /* header */
+      .modal-header{
+        background:var(--orange-dark);
+        color:white;
+        padding:18px 22px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        position:relative;
+      }
+      .modal-header h1{
+        margin:0;
+        font-size:20px;
+        font-weight:600;
+      }
+      .modal-header .close{
+        background:transparent;
+        border:2px solid rgba(255,255,255,0.2);
+        color:white;
+        padding:6px 10px;
+        font-size:18px;
+        border-radius:6px;
+        cursor:pointer;
+      }
+      
+      /* body layout */
+      .modal-body{
+        display:flex;
+        gap:20px;
+        padding:22px;
+      }
+      
+      /* left (productos) */
+      .left{
+        flex:1.6;
+      }
+      
+      /* form row */
+      .form-row{
+        display:flex;
+        gap:12px;
+        align-items:center;
+        margin-bottom:12px;
+        flex-wrap:wrap;
+      }
+      .form-row label{
+        font-weight:600;
+        color:#2f2f2f;
+      }
+      .form-row input{
+        padding:8px 10px;
+        border-radius:3px;
+        border:2px solid rgba(0,0,0,0.08);
+        min-width:120px;
+        background:white;
+        box-shadow: inset 0 1px 0 rgba(0,0,0,0.02);
+      }
+      .form-row .notes-label{ margin-left:12px; }
+      .form-row .notes{ flex:1; }
+      
+      /* tabs */
+      .tabs{
+        display:flex;
+        gap:8px;
+        margin:8px 0 16px 0;
+      }
+      .tab{
+        background:transparent;
+        border:2px solid rgba(0,0,0,0.08);
+        padding:8px 16px;
+        border-radius:8px;
+        font-weight:600;
+        cursor:pointer;
+      }
+      .tab.active{
+        background: #cfe3ff;
+        color: #1549b6;
+        border-color: rgba(0,0,0,0.06);
+      }
+      
+      /* grid de tarjetas */
+      .product-grid{
+        display:grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap:16px;
+      }
+      
+      /* tarjeta */
+      .card{
+        background:var(--card-bg);
+        border-radius:8px;
+        display:flex;
+        justify-content:space-between;
+        padding:14px;
+        box-shadow: 0 6px 16px var(--shadow);
+        align-items:center;
+        gap:12px;
+      }
+      .card-left{ width:65%; }
+      .card-right{ width:35%; display:flex; justify-content:center; align-items:center; }
+      .card-title{ margin:0; font-weight:700; font-size:18px; color:#2b2b2b; }
+      .card-sub{ margin:6px 0 0 0; color:var(--muted); font-size:13px; }
+      .card-cat{ margin:6px 0 0 0; color:var(--muted); font-size:12px; }
+      .price{ color:var(--green); font-weight:700; margin-top:8px; font-size:18px; }
+      .time{ color:var(--muted); font-size:13px; margin-top:6px; }
+      .btn{
+        display:inline-block;
+        margin-top:10px;
+        padding:10px 18px;
+        border-radius:10px;
+        border:none;
+        cursor:pointer;
+        font-weight:700;
+        box-shadow: 0 3px 0 rgba(0,0,0,0.06);
+      }
+      .btn.add{
+        background:var(--orange-dark);
+        color:white;
+        width:100%;
+      }
+      .btn.create{
+        background:white;
+        color:var(--black-dark);
+        padding:16px;
+        width:100%;
+        border-radius:8px;
+        font-size:16px;
+        margin-top:22px;
+        border:2px solid rgba(0,0,0,0.06);
+      }
+      
+      /* imagenes y placeholders */
+      .bottle{ width:78px; height:160px; }
+      .image-placeholder{
+        width:78px; height:78px; display:flex; align-items:center; justify-content:center;
+        border-radius:6px; background:#fff6f0; font-size:32px;
+      }
+      .image-placeholder.coffee{ background:#fff9f0 }
+      .image-placeholder.soda{ background:#fff9f0 }
+      
+      /* right panel */
+      .right{
+        width:360px;
+        padding-left:18px;
+        border-left:2px solid rgba(0,0,0,0.06);
+        display:flex;
+        flex-direction:column;
+      }
+      .summary-header{
+        display:flex;
+        align-items:center;
+        gap:10px;
+        margin-bottom:12px;
+      }
+      .summary-header h2{ margin:0; font-size:18px; color:#6a3810; font-weight:700; }
+      .cart{ width:34px; height:34px; }
+      
+      /* item del pedido */
+      .order-item{
+        background: #fff;
+        border-radius:8px;
+        padding:12px;
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:8px;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.05);
+      }
+      .item-left{ flex:1; }
+      .item-title{ margin:0; font-weight:700; }
+      .item-sub{ margin:4px 0 0 0; color:var(--muted); font-size:12px; }
+      .item-qty{ margin:8px 0 0 0; color:var(--muted); font-size:13px; }
+      .item-right{ display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+      
+      .item-price{ color:var(--green); font-weight:800; font-size:16px; margin:0; }
+      
+      /* controles circulares +/- */
+      .qty-controls{ display:flex; gap:8px; }
+      .circle{
+        width:30px; height:30px; border-radius:50%; border:none; display:inline-flex;
+        align-items:center; justify-content:center; font-weight:700; cursor:pointer;
+        background:#fff; box-shadow: 0 3px 8px rgba(0,0,0,0.06);
+      }
+      
+      /* mini botella */
+      .mini-bottle{ width:48px; height:68px; }
+      
+      /* divisor y total */
+      .divider{ border:none; border-top:2px solid rgba(0,0,0,0.06); margin:18px 0; }
+      .total-row{ display:flex; justify-content:space-between; align-items:center; font-size:26px; font-weight:700; padding:4px 0; }
+      .total-amount{ color:var(--green); font-size:28px; }
+      
+      /* responsive */
+      @media (max-width: 1100px){
+        .modal{ width: 95%; }
+        .product-grid{ grid-template-columns: 1fr; }
+        .right{ width:320px; }
+      }
+      @media (max-width: 720px){
+        .modal-body{ flex-direction:column; }
+        .right{ width:100%; border-left:none; padding-left:0; }
+      }
+      
+</style>
+<body>
+  <div class="overlay">
+    <div class="modal">
+      <!-- Header -->
+      <header class="modal-header">
+        <h1>Crear Nueva Orden</h1>
+        <button class="close" aria-label="Cerrar">✕</button>
+      </header>
+
+      <!-- Body -->
+      <div class="modal-body">
+        <!-- Left content: lista productos -->
+        <section class="left">
+          <div class="form-row">
+            <label>Número de Mesa *</label>
+            <input type="text" value="4" />
+            <label class="notes-label">Notas Especiales</label>
+            <input type="text" placeholder="..." class="notes"/>
+          </div>
+
+          <!-- Tabs -->
+          <nav class="tabs">
+            <button class="tab active">Todos</button>
+            <button class="tab">Bebidas</button>
+            <button class="tab">Comidas</button>
+            <button class="tab">Ensaladas</button>
+          </nav>
+
+          <!-- Grid de productos -->
+          <div class="product-grid">
+            <!-- Tarjeta 1 -->
+            <article class="card">
+              <div class="card-left">
+                <h3 class="card-title">Agua Natural</h3>
+                <p class="card-sub">Agua purificada</p>
+                <p class="card-cat">Categoría: Bebidas</p>
+                <p class="price">$1.50</p>
+                <p class="time">⏱ 2 min</p>
+                <button class="btn add">Agregar</button>
+              </div>
+              <div class="card-right">
+                <!-- botella SVG -->
+                <svg class="bottle" viewBox="0 0 100 240" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                  <defs>
+                    <linearGradient id="g1" x1="0" x2="1">
+                      <stop offset="0" stop-color="#f5fbff"/>
+                      <stop offset="1" stop-color="#dbefff"/>
+                    </linearGradient>
+                  </defs>
+                  <rect x="20" y="10" width="60" height="200" rx="20" fill="url(#g1)" stroke="#9cc8ff" stroke-width="3"/>
+                  <rect x="38" y="0" width="24" height="20" rx="6" fill="#9cc8ff"/>
+                </svg>
+              </div>
+            </article>
+
+            <!-- Tarjeta 2 -->
+            <article class="card">
+              <div class="card-left">
+                <h3 class="card-title">Café Americano</h3>
+                <p class="card-sub">Café negro tradicional</p>
+                <p class="card-cat">Categoría: Bebidas</p>
+                <p class="price">$2.50</p>
+                <p class="time">⏱ 5 min</p>
+                <button class="btn add">Agregar</button>
+              </div>
+              <div class="card-right">
+                <div class="image-placeholder coffee">☕</div>
+              </div>
+            </article>
+
+            <!-- Tarjeta 3 -->
+            <article class="card">
+              <div class="card-left">
+                <h3 class="card-title">Cappuccino</h3>
+                <p class="card-sub">Café con leche espumada</p>
+                <p class="card-cat">Categoría: Bebidas</p>
+                <p class="price">$3.00</p>
+                <p class="time">⏱ 7 min</p>
+                <button class="btn add">Agregar</button>
+              </div>
+              <div class="card-right">
+                <div class="image-placeholder capp">🥛</div>
+              </div>
+            </article>
+
+            <!-- Tarjeta 4 -->
+            <article class="card">
+              <div class="card-left">
+                <h3 class="card-title">Refresco</h3>
+                <p class="card-sub">Bebida gaseosa variada</p>
+                <p class="card-cat">Categoría: Bebidas</p>
+                <p class="price">$2.00</p>
+                <p class="time">⏱ 3 min</p>
+                <button class="btn add">Agregar</button>
+              </div>
+              <div class="card-right">
+                <div class="image-placeholder soda">🥤</div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- Right content: resumen -->
+        <aside class="right">
+          <div class="summary-header">
+            <svg class="cart" viewBox="0 0 24 24" aria-hidden>
+              <path fill="#e95a21" d="M7 18a1 1 0 100 2 1 1 0 000-2zm10 0a1 1 0 100 2 1 1 0 000-2z"/>
+              <path d="M3 3h2l1.4 8.4A2 2 0 008.4 13h7.2a2 2 0 001.99-1.6L19 6H6" stroke="#e95a21" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h2>Resumen de Orden</h2>
+          </div>
+
+          <!-- Item -->
+          <div class="order-item">
+            <div class="item-left">
+              <p class="item-title">Agua Natural</p>
+              <p class="item-sub">Agua purificada</p>
+              <p class="item-qty">Cantidad: 1</p>
+            </div>
+            <div class="item-right">
+              <p class="item-price">$1.50</p>
+              <div class="qty-controls">
+                <button class="circle">−</button>
+                <button class="circle">+</button>
+              </div>
+              <svg class="mini-bottle" viewBox="0 0 100 240" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                <rect x="30" y="12" width="40" height="170" rx="12" fill="#dbefff" stroke="#9cc8ff" stroke-width="2"/>
+                <rect x="40" y="0" width="20" height="18" rx="4" fill="#9cc8ff"/>
+              </svg>
+            </div>
+          </div>
+
+          <hr class="divider" />
+
+          <div class="total-row">
+            <p>Total:</p>
+            <p class="total-amount">$1.50</p>
+          </div>
+
+          <button class="btn create">Crear Orden</button>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <!-- script minimo para interactividad UI (no obligatorio) -->
+  <script>
+    // Cambiar pestaña activa
+    document.querySelectorAll('.tab').forEach(t => {
+      t.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+      });
+    });
+
+    // Botones añadir: efecto visual
+    document.querySelectorAll('.btn.add').forEach(b => {
+      b.addEventListener('click', () => {
+        b.textContent = 'Agregado';
+        setTimeout(()=> b.textContent = 'Agregar', 900);
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Panel Cocina</title>
+<style>
+  body {
+    margin: 0;
+    font-family: "Comic Sans MS", sans-serif;
+    background-color: #f4a460;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Barra superior */
+  header {
+    background-color: #c57428;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+  }
+
+  header .titulo {
+    display: flex;
+    flex-direction: column;
+  }
+
+  header .titulo h1 {
+    margin: 0;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  header .titulo img {
+    width: 28px;
+    height: 28px;
+    vertical-align: middle;
+  }
+
+  header .titulo span {
+    font-size: 14px;
+  }
+
+  header .acciones {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+
+  header .acciones img {
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+  }
+
+  header .acciones img:hover {
+    transform: scale(1.1);
+  }
+
+  /* Contenedor de columnas */
+  .contenedor {
+    flex: 1;
+    display: flex;
+    gap: 15px;
+    padding: 15px;
+    overflow-x: auto;
+  }
+
+  .columna {
+    flex: 1;
+    background-color: #fff8ee;
+    border: 2px solid #d29a61;
+    border-radius: 8px;
+    min-width: 280px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .columna h2 {
+    background-color: #f5deb3;
+    margin: 0;
+    padding: 10px;
+    border-bottom: 2px solid #d29a61;
+    font-size: 17px;
+  }
+
+  .columna:nth-child(1) h2 {
+    background-color: #e6ebf4;
+  }
+  .columna:nth-child(2) h2 {
+    background-color: #fef3dc;
+  }
+  .columna:nth-child(3) h2 {
+    background-color: #eaf4e6;
+  }
+
+  .lista {
+    flex: 1;
+    padding: 10px;
+  }
+
+  .tarjeta {
+    background-color: #fef3dc;
+    border: 2px solid #d29a61;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+
+  .tarjeta h3 {
+    margin: 0;
+    font-size: 16px;
+  }
+
+  .tarjeta .precio {
+    color: green;
+    font-weight: bold;
+    font-size: 15px;
+  }
+
+  .tarjeta .hora {
+    color: red;
+    font-size: 13px;
+  }
+
+  .tarjeta .tomado {
+    font-size: 13px;
+    color: #333;
+  }
+
+  .tarjeta .acciones {
+    margin-top: 8px;
+    display: flex;
+    gap: 6px;
+  }
+
+  .tarjeta button {
+    border: none;
+    border-radius: 5px;
+    padding: 6px 10px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .ver {
+    background-color: #fff;
+    border: 2px solid #555;
+  }
+
+  .listo {
+    background-color: #2e8b57;
+    color: white;
+  }
+
+  .eliminar {
+    background-color: #d32f2f;
+    color: white;
+  }
+
+  .tarjeta button:hover {
+    opacity: 0.85;
+  }
+
+  .vacio {
+    text-align: center;
+    color: #999;
+    margin-top: 15px;
+  }
+
+  @media (max-width: 768px) {
+    header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .contenedor {
+      flex-direction: column;
+    }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div class="titulo">
+      <h1>
+        <img src="usuarios.png" alt="Usuarios" />
+        Panel Cocina
+      </h1>
+      <span>Bienvenido</span>
+    </div>
+    <div class="acciones">
+      <img src="sincronizar.png" alt="Sincronizar" title="Sincronizar" onclick="sincronizar()" />
+      <img src="opcion-de-cerrar-sesion.png" alt="Salir" title="Cerrar sesión" onclick="salir()" />
+    </div>
+  </header>
+
+  <div class="contenedor">
+    <!-- Columna Nuevos -->
+    <div class="columna" id="nuevos">
+      <h2>🟦 Nuevos (0)</h2>
+      <div class="lista" id="listaNuevos">
+        <p class="vacio">No hay órdenes nuevas</p>
+      </div>
+    </div>
+
+    <!-- Columna En preparación -->
+    <div class="columna" id="preparacion">
+      <h2>🟧 En Preparación (1)</h2>
+      <div class="lista" id="listaPreparacion">
+        <div class="tarjeta">
+          <h3>Mesa 4</h3>
+          <p>Orden #3</p>
+          <p class="hora">🕓 A las 12:26</p>
+          <p class="tomado">Tomado por: Leonardo</p>
+          <p class="precio">$6.50</p>
+          <div class="acciones">
+            <button class="ver" onclick="verOrden('Mesa 4', '#3', 'Leonardo', '$6.50')">👁️ Ver</button>
+            <button class="listo" onclick="moverAListos(this)">✔️ Listo</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Columna Listos -->
+    <div class="columna" id="listos">
+      <h2>🟩 Listos (1)</h2>
+      <div class="lista" id="listaListos">
+        <div class="tarjeta">
+          <h3>Mesa 3</h3>
+          <p>Orden #2</p>
+          <p class="hora">🕓 A las 12:20</p>
+          <p class="tomado">Tomado por: Leonardo</p>
+          <p class="precio">$4.50</p>
+          <div class="acciones">
+            <button class="ver" onclick="verOrden('Mesa 3', '#2', 'Leonardo', '$4.50')">👁️ Ver</button>
+            <button class="eliminar" onclick="eliminarOrden(this)"> Eliminar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function verOrden(mesa, orden, tomado, precio) {
+      alert(`Detalles de ${mesa}\nOrden ${orden}\nTomado por: ${tomado}\nTotal: ${precio}`);
+    }
+
+    function moverAListos(btn) {
+      const tarjeta = btn.closest(".tarjeta");
+      document.getElementById("listaListos").appendChild(tarjeta);
+      tarjeta.querySelector(".listo")?.remove();
+      const btnEliminar = document.createElement("button");
+      btnEliminar.textContent = " Eliminar";
+      btnEliminar.className = "eliminar";
+      btnEliminar.onclick = () => eliminarOrden(btnEliminar);
+      tarjeta.querySelector(".acciones").appendChild(btnEliminar);
+      actualizarContadores();
+    }
+
+    function eliminarOrden(btn) {
+      const tarjeta = btn.closest(".tarjeta");
+      tarjeta.remove();
+      actualizarContadores();
+    }
+
+    function actualizarContadores() {
+      const nuevos = document.querySelectorAll("#listaNuevos .tarjeta").length;
+      const prep = document.querySelectorAll("#listaPreparacion .tarjeta").length;
+      const listos = document.querySelectorAll("#listaListos .tarjeta").length;
+
+      document.querySelector("#nuevos h2").textContent = `🟦 Nuevos (${nuevos})`;
+      document.querySelector("#preparacion h2").textContent = `🟧 En Preparación (${prep})`;
+      document.querySelector("#listos h2").textContent = `🟩 Listos (${listos})`;
+
+      if (nuevos === 0)
+        document.getElementById("listaNuevos").innerHTML = `<p class="vacio">No hay órdenes nuevas</p>`;
+    }
+
+    function sincronizar() {
+      alert("🔄 Sincronizando órdenes con el servidor...");
+    }
+
+    function salir() {
+      if (confirm("¿Deseas cerrar sesión?")) {
+        alert("Sesión cerrada correctamente.");
+        // Aquí podrías redirigir a otra página si deseas
+        // window.location.href = "login.html";
+      }
+    }
+  </script>
+</body>
+</html>

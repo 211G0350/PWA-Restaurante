@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalles de Orden</title>
+  <link rel="stylesheet" href="detalles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<style>
+    body {
+        font-family: 'Poppins', sans-serif;
+        background-color: #f4a460;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+      
+      /* Contenedor principal más grande */
+      .detalle-container {
+        width: 520px; /* antes 420px */
+        background-color: #f8b56a;
+        border-radius: 10px;
+        border: 2px solid #d97a2b;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+        overflow: hidden;
+      }
+      
+      /* Encabezado */
+      .detalle-header {
+        background-color: #d97a2b;
+        color: white;
+        padding: 12px 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .detalle-header h2 {
+        font-size: 19px;
+        margin: 0;
+      }
+      
+      .close-btn {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 20px;
+        cursor: pointer;
+      }
+      
+      /* Cuerpo */
+      .detalle-body {
+        padding: 20px;
+      }
+      
+      .info-section {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px 20px;
+        margin-bottom: 18px;
+      }
+      
+      .info-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .info-item i {
+        font-size: 20px;
+        color: #3a2d1a;
+      }
+      
+      .label {
+        margin: 0;
+        font-size: 14px;
+        color: #3a2d1a;
+      }
+      
+      .value {
+        margin: 0;
+        font-weight: bold;
+        font-size: 15px;
+      }
+      
+      .estado {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+      }
+      
+      .status {
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 12px;
+        color: white;
+      }
+      
+      .status.sent {
+        background-color: #e4ad4d;
+      }
+      
+      /* Productos */
+      .productos-title {
+        font-size: 17px;
+        font-weight: bold;
+        color: #3a2d1a;
+        margin-bottom: 10px;
+      }
+      
+      .producto-card {
+        background-color: #fce3be;
+        border-radius: 10px;
+        border: 1.5px solid #f4b96d;
+        padding: 8px 12px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+      }
+      
+      .producto-info {
+        color: #3a2d1a;
+      }
+      
+      .nombre {
+        font-weight: bold;
+        margin: 0;
+      }
+      
+      .cantidad {
+        margin: 0;
+        color: #777;
+        font-size: 13px;
+      }
+      
+      .producto-precio {
+        text-align: right;
+      }
+      
+      .precio {
+        margin: 0;
+        color: green;
+        font-weight: bold;
+      }
+      
+      .unitario {
+        margin: 0;
+        font-size: 12px;
+        color: #777;
+      }
+      
+      /* Total más pequeño y alineado a la derecha */
+      .total-box {
+        display: inline-block;
+        background-color: #fce3be;
+        border-radius: 8px;
+        border: 2px solid #3a2d1a;
+        padding: 4px 10px;
+        font-weight: bold;
+        font-size: 14px;
+        margin-top: 10px;
+        float: right; /* 👈 ahora se alinea a la derecha */
+      }
+      
+      .total {
+        color: green;
+        margin-left: 5px;
+        font-size: 15px;
+      }
+         
+</style>
+<body>
+  <div class="detalle-container">
+    <header class="detalle-header">
+      <h2>Detalles de Orden #2</h2>
+      <button class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+    </header>
+
+    <main class="detalle-body">
+      <section class="info-section">
+        <div class="info-item">
+          <i class="fa-regular fa-file-lines"></i>
+          <div>
+            <p class="label">Mesa</p>
+            <p class="value">3</p>
+          </div>
+        </div>
+
+        <div class="info-item">
+          <i class="fa-regular fa-clock"></i>
+          <div>
+            <p class="label">Hora</p>
+            <p class="value">21/09/2025, 12:20</p>
+          </div>
+        </div>
+
+        <div class="info-item">
+          <i class="fa-solid fa-user"></i>
+          <div>
+            <p class="label">Mesero</p>
+            <p class="value">Leonardo</p>
+          </div>
+        </div>
+
+        <div class="info-item estado">
+          <p class="label">Estado</p>
+          <span class="status sent">Enviado</span>
+        </div>
+      </section>
+
+      <h3 class="productos-title">Productos</h3>
+
+      <div class="producto-card">
+        <div class="producto-info">
+          <p class="nombre">Café Americano</p>
+          <p class="cantidad">Cantidad: 1</p>
+        </div>
+        <div class="producto-precio">
+          <p class="precio">$2.50</p>
+          <p class="unitario">Precio unitario: $2.50</p>
+        </div>
+      </div>
+
+      <div class="producto-card">
+        <div class="producto-info">
+          <p class="nombre">Refresco</p>
+          <p class="cantidad">Cantidad: 1</p>
+        </div>
+        <div class="producto-precio">
+          <p class="precio">$2.00</p>
+          <p class="unitario">Precio unitario: $2.00</p>
+        </div>
+      </div>
+
+      <div class="total-box">
+        <p><strong>Total:</strong> <span class="total">$4.50</span></p>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

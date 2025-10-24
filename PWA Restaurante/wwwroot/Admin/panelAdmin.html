@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Admin - Usuarios</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  body {
+    margin: 0;
+    font-family: "Comic Sans MS", sans-serif;
+    background-color: #f4a460;
+  }
+
+  /* Encabezado general */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid #b46525;
+    background-color: #f7ca9c;
+    height: 70px;
+  }
+
+  /* Panel izquierdo */
+  .panel-left {
+    display: flex;
+    align-items: center;
+    background-color: #b46525;
+    color: white;
+    padding: 10px 20px;
+    width: 220px;
+    border-right: 2px solid #b46525;
+  }
+
+  .panel-left i {
+    font-size: 30px;
+    margin-right: 10px;
+  }
+
+  .panel-left div {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel-left h2 {
+    font-size: 16px;
+    margin: 0;
+  }
+
+  .panel-left p {
+    margin: 0;
+    font-size: 13px;
+    color: #f7e7d1;
+  }
+
+  /* Centro de navegación */
+  .nav-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 60px;
+    flex: 1;
+  }
+
+  .nav-center a {
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #1b47b2;
+  }
+
+  .nav-center a i {
+    color: #b46525;
+    font-size: 22px;
+  }
+
+  .nav-center a:hover {
+    text-decoration: underline;
+  }
+
+  /* Panel derecho */
+  .panel-right {
+    background-color: #b46525;
+    padding: 10px 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    border-left: 2px solid #b46525;
+  }
+
+  .panel-right i {
+    margin-right: 6px;
+  }
+
+  .panel-right button {
+    background: none;
+    border: none;
+    color: white;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+  }
+
+  .panel-right button:hover {
+    text-decoration: underline;
+  }
+
+  /* Imagen central */
+  .imagen-central {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: calc(100vh - 70px);
+  }
+
+  .imagen-central img {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+  }
+
+</style>
+</head>
+<body>
+
+  <header>
+    <div class="panel-left">
+      <i class="fa-solid fa-user"></i>
+      <div>
+        <h2>Panel Admin</h2>
+        <p>Bienvenido</p>
+      </div>
+    </div>
+
+    <div class="nav-center">
+      <a href="#" class="active"><i class="fa-solid fa-users"></i> Usuarios</a>
+      <a href="#"><i class="fa-solid fa-burger"></i> Productos</a>
+    </div>
+
+    <div class="panel-right">
+      <button><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
+    </div>
+  </header>
+
+  <div class="imagen-central">
+    <img src="renderindex.png" alt="Logo central">
+  </div>
+
+</body>
+</html>
