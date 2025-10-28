@@ -32,9 +32,9 @@ namespace PWA_Restaurante.Controllers
 		[HttpGet("Enviados")]
 		public IActionResult ObtenerPedidosEnviados()
 		{
-			var pedidos = _pedidoRepository.GetAll()
-				.Where(p => p.Estado == "Enviado")
-				.Join(_usuarioRepository.GetAll(),
+			var pedidos = _pedidoRepository.GetQueryable()
+				.Where(p => p.Estado == "enviado")
+				.Join(_usuarioRepository.GetQueryable(),
 					p => p.UsuarioId,
 					u => u.Id,
 					(p, u) => new PedidoResumenCocinaDTO
@@ -55,9 +55,9 @@ namespace PWA_Restaurante.Controllers
 		[HttpGet("EnPreparacion")]
 		public IActionResult ObtenerPedidosEnPreparacion()
 		{
-			var pedidos = _pedidoRepository.GetAll()
-				.Where(p => p.Estado == "En Preparacion")
-				.Join(_usuarioRepository.GetAll(),
+			var pedidos = _pedidoRepositoy.GetQueryable()
+				.Where(p => p.Estado == "en preparacion")
+				.Join(_usuarioRepository.GetQueryable(),
 					p => p.UsuarioId,
 					u => u.Id,
 					(p, u) => new PedidoResumenCocinaDTO
@@ -78,9 +78,9 @@ namespace PWA_Restaurante.Controllers
 		[HttpGet("Listo")]
 		public IActionResult ObtenerPedidosListo()
 		{
-			var pedidos = _pedidoRepository.GetAll()
-				.Where(p => p.Estado == "Listo")
-				.Join(_usuarioRepository.GetAll(),
+			var pedidos = _pedidoRepository.GetQueryable()
+				.Where(p => p.Estado == "listo")
+				.Join(_usuarioRepository.GetQueryable(),
 					p => p.UsuarioId,
 					u => u.Id,
 					(p, u) => new PedidoResumenCocinaDTO
@@ -101,9 +101,9 @@ namespace PWA_Restaurante.Controllers
 		[HttpGet("Todos")]
 		public IActionResult ObtenerTodosLosPedidos()
 		{
-			var pedidos = _pedidoRepository.GetAll()
-				.Where(p => p.Estado != "Pendiente")
-				.Join(_usuarioRepository.GetAll(),
+			var pedidos = _pedidoRepository.GetQueryable()
+				.Where(p => p.Estado != "pendiente")
+				.Join(_usuarioRepository.GetQueryable(),
 					p => p.UsuarioId,
 					u => u.Id,
 					(p, u) => new PedidoResumenCocinaDTO
@@ -121,54 +121,10 @@ namespace PWA_Restaurante.Controllers
 			return Ok(pedidos);
 		}
 
-		[HttpGet("VerDetalles/{id}")]
-		public IActionResult VerDetallesPedido(int id)
-		{
-			var pedido = _pedidoRepository.GetAll()
-				.FirstOrDefault(p => p.Id == id);
-
-			if (pedido == null)
-			{
-				return NotFound("Pedido no encontrado");
-			}
-
-			var usuario = _usuarioRepository.GetAll()
-				.FirstOrDefault(u => u.Id == pedido.UsuarioId);
-
-			var detalles = _detalleRepository.GetAll()
-				.Where(d => d.PedidoId == id)
-				.Join(_productoRepository.GetAll(),
-					d => d.ProductoId,
-					p => p.Id,
-					(d, p) => new PedidoDetalleDTO
-					{
-						Id = d.Id,
-						NombreProducto = p.Nombre,
-						Cantidad = d.Cantidad,
-						PrecioUnitario = d.PrecioUnitario,
-						Subtotal = d.Cantidad * d.PrecioUnitario
-					})
-				.ToList();
-
-			var pedidoCompleto = new PedidoDetalleCompletoDTO
-			{
-				Id = pedido.Id,
-				NumMesa = pedido.NumMesa,
-				NotasEspeciales = pedido.NotasEspeciales,
-				UsuarioNombre = usuario?.Nombre ?? "Usuario no encontrado",
-				TomadoEn = pedido.TomadoEn,
-				Estado = pedido.Estado,
-				PrecioTotal = pedido.PrecioTotal,
-				Detalles = detalles
-			};
-
-			return Ok(pedidoCompleto);
-		}
-
 		[HttpPut("ActualizarEstado/{id}")]
 		public IActionResult ActualizarEstado(int id)
 		{
-			var pedido = _pedidoRepository.GetAll().FirstOrDefault(p => p.Id == id);
+			var pedido = _pedidoRepository.GetByIdWithTracking(id);
 			if (pedido == null)
 			{
 				return NotFound("Pedido no encontrado");
@@ -179,17 +135,17 @@ namespace PWA_Restaurante.Controllers
 
 			switch (pedido.Estado)
 			{
-				case "Enviado":
-					nuevoEstado = "En Preparacion";
+				case "enviado":
+					nuevoEstado = "en preparacion";
 					mensaje = "Pedido enviado a preparación";
 					break;
-				case "En Preparacion":
-					nuevoEstado = "Listo";
+				case "en preparacion":
+					nuevoEstado = "listo";
 					mensaje = "Pedido marcado como listo";
 					break;
-				case "Listo":
+				case "listo":
 					return BadRequest("El pedido ya está listo, no se puede cambiar el estado");
-				case "Pendiente":
+				case "pendiente":
 					return BadRequest("Los pedidos pendientes no se pueden procesar desde cocina");
 				default:
 					return BadRequest($"Estado '{pedido.Estado}' no válido para actualización desde cocina");
@@ -202,7 +158,7 @@ namespace PWA_Restaurante.Controllers
 			{
 				message = mensaje,
 				pedidoId = pedido.Id,
-				estadoAnterior = pedido.Estado == "En Preparacion" ? "Enviado" : "En Preparacion",
+				estadoAnterior = pedido.Estado == "en preparacion" ? "enviado" : "en preparacion",
 				nuevoEstado = nuevoEstado,
 				numMesa = pedido.NumMesa
 			});
@@ -217,9 +173,9 @@ namespace PWA_Restaurante.Controllers
 				return BadRequest("Los pedidos pendientes no se pueden ver desde cocina");
 			}
 
-			var pedidos = _pedidoRepository.GetAll()
+			var pedidos = _pedidoRepository.GetQueryable()
 				.Where(p => p.Estado.ToLower() == estado.ToLower())
-				.Join(_usuarioRepository.GetAll(),
+				.Join(_usuarioRepository.GetQueryable(),
 					p => p.UsuarioId,
 					u => u.Id,
 					(p, u) => new PedidoResumenCocinaDTO

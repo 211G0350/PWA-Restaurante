@@ -93,11 +93,17 @@ namespace PWA_Restaurante.Controllers
 		{
 			if (_validator.ValidateAgregar(dto, out List<string> errores))
 			{
+			// si se indica una categoria que no existe, se agregará esa nueva categoria tmb
+
+
+				var categoriaExistente = _repository.GetAll()
+					.Any(p => p.Categoria.ToLower() == dto.Categoria.ToLower());
+				
 				var producto = new Productos
 				{
 					Nombre = dto.Nombre,
 					Precio = dto.Precio,
-					Categoria = dto.Categoria,
+					Categoria = dto.Categoria, 
 					Descripcion = dto.Descripcion,
 					TiempoPreparacion = dto.TiempoPreparacion,
 					ImagenProducto = dto.ImagenProducto,
@@ -105,7 +111,12 @@ namespace PWA_Restaurante.Controllers
 				};
 
 				_repository.Insert(producto);
-				return Ok(new { message = "Producto agregado exitosamente", id = producto.Id });
+				
+				var mensaje = categoriaExistente 
+					? "Producto agregado exitosamente" 
+					: $"Producto agregado exitosamente. Nueva categoría '{dto.Categoria}' creada automáticamente";
+				
+				return Ok(new { message = mensaje, id = producto.Id });
 			}
 			else
 			{
@@ -119,7 +130,7 @@ namespace PWA_Restaurante.Controllers
 		{
 			if (_validator.ValidateEditar(dto, out List<string> errores))
 			{
-				var productoExistente = _repository.GetAll().FirstOrDefault(p => p.Id == dto.Id);
+				var productoExistente = _repository.GetByIdWithTracking(dto.Id);
 
 				productoExistente.Nombre = dto.Nombre;
 				productoExistente.Precio = dto.Precio;
@@ -144,7 +155,7 @@ namespace PWA_Restaurante.Controllers
 		{
 			if (_validator.ValidateEliminar(id, out List<string> errores))
 			{
-				var producto = _repository.GetAll().FirstOrDefault(p => p.Id == id);
+				var producto = _repository.GetByIdWithTracking(id);
 				_repository.Delete(producto.Id);
 				return Ok(new { message = "Producto eliminado exitosamente" });
 			}

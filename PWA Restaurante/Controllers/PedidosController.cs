@@ -33,7 +33,7 @@ namespace PWA_Restaurante.Controllers
 		public IActionResult ObtenerPedidosPendientes()
 		{
 			var pedidos = _pedidoRepository.GetAll()
-				.Where(p => p.Estado == "Pendiente")
+				.Where(p => p.Estado == "pendiente")
 				.Select(p => new PedidoResumen_DTO
 				{
 					Id = p.Id,
@@ -52,7 +52,7 @@ namespace PWA_Restaurante.Controllers
 		public IActionResult ObtenerPedidosEnviados()
 		{
 			var pedidos = _pedidoRepository.GetAll()
-				.Where(p => p.Estado == "Enviado")
+				.Where(p => p.Estado == "enviado")
 				.Select(p => new PedidoResumen_DTO
 				{
 					Id = p.Id,
@@ -88,52 +88,57 @@ namespace PWA_Restaurante.Controllers
 		[HttpGet("VerDetalles/{id}")]
 		public IActionResult VerDetallesPedido(int id)
 		{
-			var pedido = _pedidoRepository.GetAll()
-				.FirstOrDefault(p => p.Id == id);
-
-			if (pedido == null)
+			try
 			{
-				return NotFound("Pedido no encontrado");
+				var pedido = _pedidoRepository.GetById(id);
+
+				if (pedido == null)
+				{
+					return NotFound("Pedido no encontrado");
+				}
+
+				var usuario = _usuarioRepository.GetById(pedido.UsuarioId);
+
+				var detalles = _detalleRepository.GetQueryable()
+					.Where(d => d.PedidoId == id)
+					.Join(_productoRepository.GetQueryable(),
+						d => d.ProductoId,
+						p => p.Id,
+						(d, p) => new PedidoDetalleDTO
+						{
+							Id = d.Id,
+							NombreProducto = p.Nombre,
+							Cantidad = d.Cantidad,
+							PrecioUnitario = d.PrecioUnitario,
+							Subtotal = d.Cantidad * d.PrecioUnitario
+						})
+					.ToList();
+
+				var pedidoCompleto = new PedidoDetalleCompletoDTO
+				{
+					Id = pedido.Id,
+					NumMesa = pedido.NumMesa,
+					NotasEspeciales = pedido.NotasEspeciales,
+					UsuarioNombre = usuario?.Nombre ?? "Usuario no encontrado",
+					TomadoEn = pedido.TomadoEn,
+					Estado = pedido.Estado,
+					PrecioTotal = pedido.PrecioTotal,
+					Detalles = detalles
+				};
+
+				return Ok(pedidoCompleto);
 			}
-
-			var usuario = _usuarioRepository.GetAll()
-				.FirstOrDefault(u => u.Id == pedido.UsuarioId);
-
-			var detalles = _detalleRepository.GetAll()
-				.Where(d => d.PedidoId == id)
-				.Join(_productoRepository.GetAll(),
-					d => d.ProductoId,
-					p => p.Id,
-					(d, p) => new PedidoDetalleDTO
-					{
-						Id = d.Id,
-						NombreProducto = p.Nombre,
-						Cantidad = d.Cantidad,
-						PrecioUnitario = d.PrecioUnitario,
-						Subtotal = d.Cantidad * d.PrecioUnitario
-					})
-				.ToList();
-
-			var pedidoCompleto = new PedidoDetalleCompletoDTO
+			catch (Exception ex)
 			{
-				Id = pedido.Id,
-				NumMesa = pedido.NumMesa,
-				NotasEspeciales = pedido.NotasEspeciales,
-				UsuarioNombre = usuario?.Nombre ?? "Usuario no encontrado",
-				TomadoEn = pedido.TomadoEn,
-				Estado = pedido.Estado,
-				PrecioTotal = pedido.PrecioTotal,
-				Detalles = detalles
-			};
-
-			return Ok(pedidoCompleto);
+				return StatusCode(500, new { message = "Error interno del servidor", error = ex.Message });
+			}
 		}
 
 		[HttpGet("EnPreparacion")]
 		public IActionResult ObtenerPedidosEnPreparacion()
 		{
 			var pedidos = _pedidoRepository.GetAll()
-				.Where(p => p.Estado == "En Preparacion")
+				.Where(p => p.Estado == "en preparacion")
 				.Select(p => new PedidoResumen_DTO
 				{
 					Id = p.Id,
@@ -152,7 +157,7 @@ namespace PWA_Restaurante.Controllers
 		public IActionResult ObtenerPedidosListo()
 		{
 			var pedidos = _pedidoRepository.GetAll()
-				.Where(p => p.Estado == "Listo")
+				.Where(p => p.Estado == "listo")
 				.Select(p => new PedidoResumen_DTO
 				{
 					Id = p.Id,
@@ -193,8 +198,8 @@ namespace PWA_Restaurante.Controllers
 				NotasEspeciales = dto.NotasEspeciales,
 				UsuarioId = dto.UsuarioId,
 				TomadoEn = DateTime.Now,
-				Estado = dto.Estado,
-				PrecioTotal = 0 // Se calculará después
+				Estado = "pendiente", 
+				PrecioTotal = 0 
 			};
 
 			_pedidoRepository.Insert(pedido);
@@ -232,14 +237,14 @@ namespace PWA_Restaurante.Controllers
 		[HttpPut("EditarPedido")]
 		public IActionResult EditarPedido(EditarPedidoDTO dto)
 		{
-			var pedidoExistente = _pedidoRepository.GetAll().FirstOrDefault(p => p.Id == dto.Id);
+			var pedidoExistente = _pedidoRepository.GetByIdWithTracking(dto.Id);
 			if (pedidoExistente == null)
 			{
 				return NotFound("Pedido no encontrado");
 			}
 
-			// Solo podremos editar pedidos con estado "Pendiente" o "Enviado"
-			if (pedidoExistente.Estado != "Pendiente" && pedidoExistente.Estado != "Enviado")
+			// Solo podremos editar pedidos con estado "pendiente" o "Enviado"
+			if (pedidoExistente.Estado != "pendiente" && pedidoExistente.Estado != "enviado")
 			{
 				return BadRequest("Un pedido iniciado ya no se puede editar");
 			}
@@ -260,7 +265,7 @@ namespace PWA_Restaurante.Controllers
 				return BadRequest("El usuario no existe");
 			}
 
-			var detallesExistentes = _detalleRepository.GetAll().Where(d => d.PedidoId == dto.Id).ToList();
+			var detallesExistentes = _detalleRepository.GetAllWithTracking().Where(d => d.PedidoId == dto.Id).ToList();
 			foreach (var detalle in detallesExistentes)
 			{
 				_detalleRepository.Delete(detalle);
@@ -308,8 +313,8 @@ namespace PWA_Restaurante.Controllers
 				return NotFound("Pedido no encontrado");
 			}
 
-			// Solo se pueden cancelar pedidos con estado "Pendiente" o "Enviado"
-			if (pedido.Estado != "Pendiente" && pedido.Estado != "Enviado")
+			// Solo se pueden cancelar pedidos con estado "pendiente" o "Enviado"
+			if (pedido.Estado != "pendiente" && pedido.Estado != "enviado")
 			{
 				return BadRequest("No se pueden cancelar pedidos ya iniciados");
 			}
@@ -328,18 +333,18 @@ namespace PWA_Restaurante.Controllers
 		[HttpDelete("CancelarPedido/{id}")]
 		public IActionResult CancelarPedido(int id)
 		{
-			var pedido = _pedidoRepository.GetAll().FirstOrDefault(p => p.Id == id);
+			var pedido = _pedidoRepository.GetByIdWithTracking(id);
 			if (pedido == null)
 			{
 				return NotFound("Pedido no encontrado");
 			}
 
-			if (pedido.Estado != "Pendiente" && pedido.Estado != "Enviado")
+			if (pedido.Estado != "pendiente" && pedido.Estado != "enviado")
 			{
 				return BadRequest("No se pueden cancelar pedidos ya iniciados");
 			}
 
-			var detalles = _detalleRepository.GetAll().Where(d => d.PedidoId == id).ToList();
+			var detalles = _detalleRepository.GetAllWithTracking().Where(d => d.PedidoId == id).ToList();
 			foreach (var detalle in detalles)
 			{
 				_detalleRepository.Delete(detalle);
