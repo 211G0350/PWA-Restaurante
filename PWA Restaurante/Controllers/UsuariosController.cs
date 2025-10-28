@@ -27,7 +27,7 @@ namespace PWA_Restaurante.Controllers
 		public JwtService Service { get; }
 
 
-		[Authorize]
+	//	[Authorize]
 		[HttpPost("Registrar")]
 		public IActionResult Registrar(UsuarioDTO dto)
 		{
@@ -71,7 +71,7 @@ namespace PWA_Restaurante.Controllers
 			});
 		}
 
-		[Authorize(Roles = "Admin")]
+	//	[Authorize(Roles = "Admin")]
 		[HttpGet("ObtenerTodos")]
 		public IActionResult ObtenerTodos()
 		{
@@ -88,7 +88,7 @@ namespace PWA_Restaurante.Controllers
 			return Ok(usuarios);
 		}
 
-		[Authorize(Roles = "Admin")]
+	//	[Authorize(Roles = "Admin")]
 		[HttpGet("ObtenerPorId/{id}")]
 		public IActionResult ObtenerPorId(int id)
 		{
@@ -109,7 +109,7 @@ namespace PWA_Restaurante.Controllers
 			return Ok(usuarioRespuesta);
 		}
 
-		[Authorize(Roles = "Admin")]
+	//	[Authorize(Roles = "Admin")]
 		[HttpPut("Editar")]
 		public IActionResult Editar(EditarUsuarioDTO dto)
 		{
@@ -140,7 +140,7 @@ namespace PWA_Restaurante.Controllers
 			}
 		}
 
-		[Authorize(Roles = "Admin")]
+	//	[Authorize(Roles = "Admin")]
 		[HttpDelete("Eliminar/{id}")]
 		public IActionResult Eliminar(int id)
 		{
@@ -157,12 +157,12 @@ namespace PWA_Restaurante.Controllers
 		     return BadRequest("No se puede eliminar el usuario porque tiene pedidos asociados");
 			 }
 
-			Repository.Delete(usuario);
+			Repository.Delete(usuario.Id);
 			return Ok(new { message = "Usuario eliminado exitosamente" });
 		}
 
 
-		[Authorize]
+		//[Authorize]
 		[HttpGet("Perfil")]
 		public IActionResult ObtenerPerfil()
 		{

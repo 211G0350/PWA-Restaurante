@@ -7,7 +7,7 @@ using PWA_Restaurante.Repositories;
 
 namespace PWA_Restaurante.Controllers
 {
-	[Authorize(Roles = "Mesero")]
+	//[Authorize(Roles = "Mesero")]
 	[Route("api/[controller]")]
 	[ApiController]
 	public class PedidosController : ControllerBase
