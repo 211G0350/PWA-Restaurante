@@ -6,6 +6,7 @@ using PWA_Restaurante.Models.Validators;
 using PWA_Restaurante.Repositories;
 using PWA_Restaurante.Services;
 using System.Text;
+using System.IO;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -83,7 +84,24 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.MapHub<PedidosHub>("/pedidosHub");
+
+
+app.MapGet("/", async context =>
+{
+	var path = Path.Combine(app.Environment.ContentRootPath, "Views", "Home", "index.html");
+	if (File.Exists(path))
+	{
+		await context.Response.SendFileAsync(path);
+		return;
+	}
+	// Si no existe en Views, intenta servir /index.html desde wwwroot
+	context.Response.Redirect("/index.html");
+});
+
 
 app.MapControllers();
 
