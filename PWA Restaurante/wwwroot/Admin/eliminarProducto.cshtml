@@ -1,0 +1,56 @@
+@*     <!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eliminar Producto - Panel Admin</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+ *@
+ @{
+    ViewData["Title"] = "Eliminar Producto - Panel Admin";
+    Layout = "_LayoutAdmin";
+}
+
+<body>
+
+  <!-- ENCABEZADO -->
+  <header>
+    <div class="panel-left">
+      <i class="fa-solid fa-user"></i>
+      <div>
+        <h2>Panel Admin</h2>
+        <p>Bienvenido</p>
+      </div>
+    </div>
+
+    <div class="nav-center">
+      <a href="#"><i class="fa-solid fa-users"></i> Usuarios</a>
+      <a href="#" class="active"><i class="fa-solid fa-burger"></i> Productos</a>
+    </div>
+
+    <div class="panel-right">
+      <button><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
+    </div>
+  </header>
+
+  <!-- CONTENIDO -->
+  <main>
+    <div class="modal-content">
+      <h2>Eliminar Producto</h2>
+      <p>¿Desea eliminar el siguiente producto?</p>
+      <p><a href="#">Cappuccino</a></p>
+      <p>Categoría: Bebidas</p>
+
+      <div class="modal-buttons">
+        <button class="btn-eliminar"><i class="fa-solid fa-check"></i> Eliminar</button>
+        <button class="btn-cancelar"><i class="fa-solid fa-xmark"></i> Cancelar</button>
+      </div>
+
+      <div class="imagen-central">
+        <img src="renderindex.png" alt="Logo Central">
+      </div>
+    </div>
+  </main>
+
+</body>
+

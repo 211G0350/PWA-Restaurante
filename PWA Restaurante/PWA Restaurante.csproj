@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="Views\Home\index.cshtml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.21" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Core" Version="1.2.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.10">
@@ -18,6 +22,16 @@
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\Admin\Shared\" />
+    <Folder Include="wwwroot\Cociner\Controllers\" />
+    <Folder Include="wwwroot\Mesero\Controllers\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Views\Home\index.cshtml" />
   </ItemGroup>
 
 </Project>

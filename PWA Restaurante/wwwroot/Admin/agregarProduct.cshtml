@@ -1,0 +1,113 @@
+<!--<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Admin - Productos</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+</head>-->
+@{
+    ViewData["Title"] = "Panel Admin - Productos";
+    Layout = "_LayoutAdmin";
+}
+<body>
+
+    <!-- HEADER -->
+    <header>
+        <div class="panel-left">
+            <i class="fa-solid fa-user"></i>
+            <div>
+                <h2>Panel Admin</h2>
+                <p>Bienvenido</p>
+            </div>
+        </div>
+
+        <div class="nav-center">
+            <a href="#"><i class="fa-solid fa-users"></i> Usuarios</a>
+            <a href="#" class="active"><i class="fa-solid fa-burger"></i> Productos</a>
+        </div>
+
+        <div class="panel-right">
+            <button><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
+        </div>
+    </header>
+
+    <!-- CONTENIDO -->
+    <main>
+        <div class="add-product-container">
+            <button class="add-product-btn">Agregar Producto <i class="fa-solid fa-plus"></i></button>
+        </div>
+
+        <!-- TABS -->
+        <div class="tabs">
+            <div class="tab active">Bebidas</div>
+            <div class="tab">Comidas</div>
+            <div class="tab">Ensaladas</div>
+        </div>
+
+        <!-- PRODUCTOS -->
+        <div class="productos-grid">
+            <div class="producto-card">
+                <div class="producto-info">
+                    <h4>Agua Natural</h4>
+                    <p>Agua purificada</p>
+                    <p>Categoría: Bebidas</p>
+                    <p class="precio">$1.50</p>
+                    <p class="tiempo"><i class="fa-regular fa-clock"></i> 2 min</p>
+                </div>
+                <img src="https://cdn-icons-png.flaticon.com/512/1047/1047711.png" alt="Agua">
+                <div class="acciones">
+                    <button>Editar</button>
+                    <button class="eliminar">Eliminar</button>
+                </div>
+            </div>
+
+            <div class="producto-card">
+                <div class="producto-info">
+                    <h4>Café Americano</h4>
+                    <p>Café negro tradicional</p>
+                    <p>Categoría: Bebidas</p>
+                    <p class="precio">$2.50</p>
+                    <p class="tiempo"><i class="fa-regular fa-clock"></i> 5 min</p>
+                </div>
+                <img src="https://cdn-icons-png.flaticon.com/512/924/924514.png" alt="Café">
+                <div class="acciones">
+                    <button>Editar</button>
+                    <button class="eliminar">Eliminar</button>
+                </div>
+            </div>
+
+            <div class="producto-card">
+                <div class="producto-info">
+                    <h4>Cappuccino</h4>
+                    <p>Café con leche espumada</p>
+                    <p>Categoría: Bebidas</p>
+                    <p class="precio">$3.00</p>
+                    <p class="tiempo"><i class="fa-regular fa-clock"></i> 7 min</p>
+                </div>
+                <img src="https://cdn-icons-png.flaticon.com/512/760/760606.png" alt="Cappuccino">
+                <div class="acciones">
+                    <button>Editar</button>
+                    <button class="eliminar">Eliminar</button>
+                </div>
+            </div>
+
+            <div class="producto-card">
+                <div class="producto-info">
+                    <h4>Refresco</h4>
+                    <p>Bebida gaseosa variada</p>
+                    <p>Categoría: Bebidas</p>
+                    <p class="precio">$2.00</p>
+                    <p class="tiempo"><i class="fa-regular fa-clock"></i> 3 min</p>
+                </div>
+                <img src="https://cdn-icons-png.flaticon.com/512/3128/3128208.png" alt="Refresco">
+                <div class="acciones">
+                    <button>Editar</button>
+                    <button class="eliminar">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+</body>
