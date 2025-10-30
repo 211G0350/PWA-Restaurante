@@ -43,7 +43,7 @@ namespace PWA_Restaurante.Controllers
 		}
 
 		[HttpGet("TodosAdmin")]
-		//[Authorize(Roles = "Admin")]
+		[Authorize(Roles = "Admin")]
 		public IActionResult ObtenerTodosLosProductosAdmin()
 		{
 			var productos = _repository.GetAll()
@@ -88,7 +88,7 @@ namespace PWA_Restaurante.Controllers
 		}
 
 		[HttpPost("AgregarProducto")]
-		//[Authorize(Roles = "Admin")]
+		[Authorize(Roles = "Admin")]
 		public IActionResult AgregarProducto(AgregarProductoDTO dto)
 		{
 			if (_validator.ValidateAgregar(dto, out List<string> errores))
@@ -125,7 +125,7 @@ namespace PWA_Restaurante.Controllers
 		}
 
 		[HttpPut("Editar")]
-		//[Authorize(Roles = "Admin")]
+		[Authorize(Roles = "Admin")]
 		public IActionResult EditarProducto(EditarProductoDTO dto)
 		{
 			if (_validator.ValidateEditar(dto, out List<string> errores))
@@ -150,14 +150,19 @@ namespace PWA_Restaurante.Controllers
 		}
 
 		[HttpDelete("EliminarProducto/{id}")]
-		//[Authorize(Roles = "Admin")]
+		[Authorize(Roles = "Admin")]
 		public IActionResult EliminarProducto(int id)
 		{
 			if (_validator.ValidateEliminar(id, out List<string> errores))
 			{
 				var producto = _repository.GetByIdWithTracking(id);
-				_repository.Delete(producto.Id);
-				return Ok(new { message = "Producto eliminado exitosamente" });
+				if (producto == null)
+				{
+					return NotFound("Producto no encontrado");
+				}
+				producto.Activo = false;
+				_repository.Update(producto);
+				return Ok(new { message = "Producto desactivado exitosamente" });
 			}
 			else
 			{

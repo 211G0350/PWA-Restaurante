@@ -7,7 +7,7 @@ using PWA_Restaurante.Repositories;
 
 namespace PWA_Restaurante.Controllers
 {
-	//[Authorize(Roles = "Cocinero")]
+	[Authorize(Roles = "Cocinero")]
 	[Route("api/[controller]")]
 	[ApiController]
 	public class CocinaController : ControllerBase
@@ -55,7 +55,7 @@ namespace PWA_Restaurante.Controllers
 		[HttpGet("EnPreparacion")]
 		public IActionResult ObtenerPedidosEnPreparacion()
 		{
-			var pedidos = _pedidoRepositoy.GetQueryable()
+			var pedidos = _pedidoRepository.GetQueryable()
 				.Where(p => p.Estado == "en preparacion")
 				.Join(_usuarioRepository.GetQueryable(),
 					p => p.UsuarioId,
