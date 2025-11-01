@@ -1,11 +1,12 @@
-﻿<html>
+﻿<!DOCTYPE html>
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Admin - Usuarios</title>
+    <title>@(ViewData["Title"] ?? "Panel Admin")</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link href="~/css/Shared.css" rel="stylesheet" />
-    <link href="~/css/Admin.css"  rel="stylesheet" />
+    <link href="/css/Shared.css" rel="stylesheet" />
+    <link href="/css/Admin.css" rel="stylesheet" />
 </head>
 <body>
 
@@ -19,18 +20,46 @@
         </div>
 
         <div class="nav-center">
-            <a href="#" class="active"><i class="fa-solid fa-users"></i> Usuarios</a>
-            <a href="#"><i class="fa-solid fa-burger"></i> Productos</a>
+            <a href="/Admin/usuariosadmin" id="link-usuarios" class="nav-link"><i class="fa-solid fa-users"></i> Usuarios</a>
+            <a href="/Admin/adminProducts" id="link-productos" class="nav-link"><i class="fa-solid fa-burger"></i> Productos</a>
         </div>
 
         <div class="panel-right">
-            <button><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
+            <button id="btn-salir"><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
         </div>
     </header>
 
-    <div class="imagen-central">
-        <img src="renderindex.png" alt="Logo central">
-    </div>
+    <main>
+        @RenderBody()
+    </main>
 
+    <script>
+        function setActiveLink() {
+            const currentPath = window.location.pathname;
+            const links = document.querySelectorAll('.nav-link');
+            
+            links.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('active');
+                }
+            });
+        }
+
+        function cerrarSesion() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('usuario');
+            window.location.href = '/';
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setActiveLink();
+            
+            const btnSalir = document.getElementById('btn-salir');
+            if (btnSalir) {
+                btnSalir.addEventListener('click', cerrarSesion);
+            }
+        });
+    </script>
 </body>
 </html>

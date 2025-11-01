@@ -11,6 +11,13 @@ using System.IO;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddControllersWithViews()
+	.AddRazorOptions(options =>
+	{
+		options.ViewLocationFormats.Add("/wwwroot/{1}/{0}.cshtml");
+		options.ViewLocationFormats.Add("/wwwroot/Shared/{0}.cshtml");
+	})
+	.AddRazorRuntimeCompilation();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -82,10 +89,12 @@ app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 
 app.UseAuthentication();
-app.UseAuthorization();
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
+
+app.UseRouting();
+app.UseAuthorization();
 
 app.MapHub<PedidosHub>("/pedidosHub");
 
@@ -103,5 +112,10 @@ app.MapGet("/", async context =>
 
 
 app.MapControllers();
+
+app.MapControllerRoute(
+	name: "admin",
+	pattern: "Admin/{action=PanelAdmin}",
+	defaults: new { controller = "Admin" });
 
 app.Run();
