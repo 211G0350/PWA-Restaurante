@@ -92,13 +92,12 @@ app.MapHub<PedidosHub>("/pedidosHub");
 
 app.MapGet("/", async context =>
 {
-	var path = Path.Combine(app.Environment.ContentRootPath, "Views", "Home", "index.html");
+	var path = Path.Combine(app.Environment.WebRootPath ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot"), "Home", "index.cshtml");
 	if (File.Exists(path))
 	{
 		await context.Response.SendFileAsync(path);
 		return;
 	}
-	// Si no existe en Views, intenta servir /index.html desde wwwroot
 	context.Response.Redirect("/index.html");
 });
 
