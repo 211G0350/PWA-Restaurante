@@ -43,6 +43,13 @@
                         <img id="imagenPreview" src="" alt="Producto" onerror="this.src='/Img/default.jpg'">
                         <input type="file" id="imagen" accept="image/jpeg,.jpg" style="display: none;">
                         <button type="button" class="upload-btn" onclick="document.getElementById('imagen').click()">Upload a File</button>
+                        <div class="form-group" style="margin-left: 15px; margin-top: 0;">
+                            <label>Activo:</label>
+                            <select id="activo" required>
+                                <option value="true">Activo</option>
+                                <option value="false">Inactivo</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -101,6 +108,7 @@
             document.getElementById('categoria').value = producto.categoria;
             document.getElementById('tiempo').value = producto.tiempoPreparacion;
             document.getElementById('descripcion').value = producto.descripcion || '';
+            document.getElementById('activo').value = producto.activo ? 'true' : 'false';
             document.getElementById('imagenPreview').src = `/Img/${producto.id}.jpg`;
           } catch (error) {
             console.error('Error al cargar producto:', error);
@@ -161,7 +169,8 @@
           formData.append('Descripcion', document.getElementById('descripcion').value || '');
           formData.append('Precio', document.getElementById('precio').value);
           formData.append('TiempoPreparacion', document.getElementById('tiempo').value);
-          formData.append('Activo', 'true');
+          formData.append('Activo', document.getElementById('activo').value === 'true' ? 'true' : 'false');
+          formData.append('ImagenProducto', '');
 
           const archivo = document.getElementById('imagen').files[0];
           if (archivo) {

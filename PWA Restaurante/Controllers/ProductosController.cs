@@ -14,12 +14,14 @@ namespace PWA_Restaurante.Controllers
 	public class ProductosController : ControllerBase
 	{
 		private readonly Repository<Productos> _repository;
+		private readonly Repository<PedidoDetalles> _pedidoDetallesRepository;
 		private readonly ProductosValidator _validator;
 		private readonly IWebHostEnvironment _hostEnvironment;
 
-		public ProductosController(Repository<Productos> repository, ProductosValidator validator, IWebHostEnvironment hostEnvironment)
+		public ProductosController(Repository<Productos> repository, Repository<PedidoDetalles> pedidoDetallesRepository, ProductosValidator validator, IWebHostEnvironment hostEnvironment)
 		{
 			_repository = repository;
+			_pedidoDetallesRepository = pedidoDetallesRepository;
 			_validator = validator;
 			_hostEnvironment = hostEnvironment;
 		}
@@ -212,6 +214,15 @@ namespace PWA_Restaurante.Controllers
 				{
 					return NotFound("Producto no encontrado");
 				}
+
+				var tienePedidos = _pedidoDetallesRepository.GetAll()
+					.Any(pd => pd.ProductoId == id);
+
+				if (tienePedidos)
+				{
+					return BadRequest(new { message = "No se puede eliminar el producto porque está asociado a uno o más pedidos." });
+				}
+
 				producto.Activo = false;
 				_repository.Update(producto);
 				return Ok(new { message = "Producto desactivado exitosamente" });

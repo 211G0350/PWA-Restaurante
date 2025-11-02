@@ -1550,10 +1550,12 @@ header {
 /* ===== CONTENIDO ===== */
 main {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: calc(100vh - 70px);
+    min-height: calc(100vh - 70px);
     text-align: center;
+    padding: 20px;
 }
 
 /* ===== CUADRO CENTRAL ===== */
@@ -1563,6 +1565,7 @@ main {
     border-radius: 12px;
     box-shadow: 0px 3px 8px rgba(0,0,0,0.4);
     width: 400px;
+    max-width: 90%;
     text-align: center;
     border: 3px solid #b46525;
 }
