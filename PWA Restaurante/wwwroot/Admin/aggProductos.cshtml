@@ -1,86 +1,137 @@
-@* <!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Panel Admin - Agregar Producto</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
-</head> *@
 @{
     ViewData["Title"] = "Panel Admin - Agregar Producto";
     Layout = "_LayoutAdmin";
 }
 <body>
 
-  <!-- ENCABEZADO -->
-@*   <header>
-    <div class="panel-left">
-      <i class="fa-solid fa-user"></i>
-      <div>
-        <h2>Panel Admin</h2>
-        <p>Bienvenido</p>
-      </div>
-    </div>
+    <main>
+        <h2 class="titulo-principal">Agregar Producto</h2>
 
-    <div class="nav-center">
-      <a href="#"><i class="fa-solid fa-users"></i> Usuarios</a>
-      <a href="#" class="active"><i class="fa-solid fa-burger"></i> Productos</a>
-    </div>
+        <div class="form-container">
+            <form id="formAgregarProducto">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nombre">Nombre del Producto:</label>
+                        <input type="text" id="nombre" placeholder="Ej. Cappuccino" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="categoria">Categoría:</label>
+                        <input type="text" id="categoria" list="categoriasList" placeholder="Seleccione o escriba una categoría" required>
+                        <datalist id="categoriasList">
+                        </datalist>
+                    </div>
+                </div>
 
-    <div class="panel-right">
-      <button><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
-    </div>
-  </header>
- *@
-  <!-- CONTENIDO -->
-  <main>
-    <h2 class="titulo-principal">Agregar Producto</h2>
+                <div class="form-group">
+                    <label for="descripcion">Descripción:</label>
+                    <textarea id="descripcion" placeholder="Escribe una breve descripción..."></textarea>
+                </div>
 
-    <div class="form-container">
-      <form>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="nombre">Nombre del Producto:</label>
-            <input type="text" id="nombre" placeholder="Ej. Cappuccino">
-          </div>
-          <div class="form-group">
-            <label for="categoria">Categoría:</label>
-            <select id="categoria">
-              <option>Bebidas</option>
-              <option>Comidas</option>
-              <option>Ensaladas</option>
-            </select>
-          </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="precio">Precio:</label>
+                        <input type="number" id="precio" step="0.01" min="0" placeholder="Ej. 2.50" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="tiempo">Tiempo de preparación (min):</label>
+                        <input type="number" id="tiempo" min="1" placeholder="Ej. 5" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="imagen">Imagen del Producto:</label>
+                    <input type="file" id="imagen" accept="image/jpeg,.jpg">
+                </div>
+
+                <div class="btn-container">
+                    <button type="button" class="btn btn-cancelar" onclick="cancelar()">Cancelar</button>
+                    <button type="submit" class="btn btn-guardar">Guardar Producto</button>
+                </div>
+            </form>
         </div>
+    </main>
 
-        <div class="form-group">
-          <label for="descripcion">Descripción:</label>
-          <textarea id="descripcion" placeholder="Escribe una breve descripción..."></textarea>
-        </div>
+    <script>
+        function getAuthToken() {
+          return localStorage.getItem('token') || sessionStorage.getItem('token');
+        }
 
-        <div class="form-row">
-          <div class="form-group">
-            <label for="precio">Precio:</label>
-            <input type="number" id="precio" placeholder="Ej. 2.50">
-          </div>
-          <div class="form-group">
-            <label for="tiempo">Tiempo de preparación (min):</label>
-            <input type="number" id="tiempo" placeholder="Ej. 5">
-          </div>
-        </div>
+        async function cargarCategorias() {
+          try {
+            const token = getAuthToken();
+            const headers = {
+              'Content-Type': 'application/json'
+            };
+            if (token) {
+              headers['Authorization'] = `Bearer ${token}`;
+            }
 
-        <div class="form-group">
-          <label for="imagen">Imagen del Producto:</label>
-          <input type="file" id="imagen" accept="image/*">
-        </div>
+            const response = await fetch('/api/Productos/Categorias', { headers });
+            if (!response.ok) throw new Error('Error al cargar categorías');
 
-        <div class="btn-container">
-          <button type="button" class="btn btn-cancelar">Cancelar</button>
-          <button type="submit" class="btn btn-guardar">Guardar Producto</button>
-        </div>
-      </form>
-    </div>
-  </main>
+            const categorias = await response.json();
+            const datalist = document.getElementById('categoriasList');
+            datalist.innerHTML = '';
+            categorias.forEach(categoria => {
+              const option = document.createElement('option');
+              option.value = categoria;
+              datalist.appendChild(option);
+            });
+          } catch (error) {
+            console.error('Error al cargar categorías:', error);
+          }
+        }
 
+        function cancelar() {
+          window.location.href = '/Admin/adminProducts';
+        }
+
+        document.getElementById('formAgregarProducto').addEventListener('submit', async (e) => {
+          e.preventDefault();
+
+          const formData = new FormData();
+          formData.append('Nombre', document.getElementById('nombre').value);
+          formData.append('Categoria', document.getElementById('categoria').value);
+          formData.append('Descripcion', document.getElementById('descripcion').value || '');
+          formData.append('Precio', document.getElementById('precio').value);
+          formData.append('TiempoPreparacion', document.getElementById('tiempo').value);
+          formData.append('Activo', 'true');
+
+          const archivo = document.getElementById('imagen').files[0];
+          if (archivo) {
+            formData.append('archivo', archivo);
+          }
+
+          try {
+            const token = getAuthToken();
+            const headers = {};
+            if (token) {
+              headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const response = await fetch('/api/Productos/AgregarProducto', {
+              method: 'POST',
+              headers: headers,
+              body: formData
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+              alert(result.message || 'Producto agregado exitosamente');
+              window.location.href = '/Admin/adminProducts';
+            } else {
+              const errorMsg = Array.isArray(result) ? result.join(', ') : (result.message || 'Error al agregar producto');
+              alert(errorMsg);
+            }
+          } catch (error) {
+            console.error('Error:', error);
+            alert('Error al agregar producto. Por favor, intente nuevamente.');
+          }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+          cargarCategorias();
+        });
+    </script>
 </body>

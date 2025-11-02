@@ -5,6 +5,7 @@ using PWA_Restaurante.Models.DTOs;
 using PWA_Restaurante.Models.Entities;
 using PWA_Restaurante.Repositories;
 using PWA_Restaurante.Models.Validators;
+using Microsoft.AspNetCore.Hosting;
 
 namespace PWA_Restaurante.Controllers
 {
@@ -14,11 +15,13 @@ namespace PWA_Restaurante.Controllers
 	{
 		private readonly Repository<Productos> _repository;
 		private readonly ProductosValidator _validator;
+		private readonly IWebHostEnvironment _hostEnvironment;
 
-		public ProductosController(Repository<Productos> repository, ProductosValidator validator)
+		public ProductosController(Repository<Productos> repository, ProductosValidator validator, IWebHostEnvironment hostEnvironment)
 		{
 			_repository = repository;
 			_validator = validator;
+			_hostEnvironment = hostEnvironment;
 		}
 
 		[HttpGet("Todos")]
@@ -89,13 +92,10 @@ namespace PWA_Restaurante.Controllers
 
 		[HttpPost("AgregarProducto")]
 		[Authorize(Roles = "Admin")]
-		public IActionResult AgregarProducto(AgregarProductoDTO dto)
+		public IActionResult AgregarProducto([FromForm] AgregarProductoDTO dto, IFormFile archivo)
 		{
 			if (_validator.ValidateAgregar(dto, out List<string> errores))
 			{
-			// si se indica una categoria que no existe, se agregará esa nueva categoria tmb
-
-
 				var categoriaExistente = _repository.GetAll()
 					.Any(p => p.Categoria.ToLower() == dto.Categoria.ToLower());
 				
@@ -112,6 +112,32 @@ namespace PWA_Restaurante.Controllers
 
 				_repository.Insert(producto);
 				
+				if (archivo != null)
+				{
+					if (archivo.ContentType != "image/jpeg")
+					{
+						return BadRequest(new { message = "Solo están permitidas imagenes .jpg" });
+					}
+
+					if (archivo.Length > 1024 * 1024 * 5)
+					{
+						return BadRequest(new { message = "No se permiten imagenes mayores a 5MB" });
+					}
+
+					var ruta = Path.Combine(_hostEnvironment.WebRootPath, "Img", producto.Id + ".jpg");
+					
+					var directory = Path.GetDirectoryName(ruta);
+					if (!Directory.Exists(directory))
+					{
+						Directory.CreateDirectory(directory);
+					}
+
+					using (FileStream fs = new FileStream(ruta, FileMode.Create))
+					{
+						archivo.CopyTo(fs);
+					}
+				}
+				
 				var mensaje = categoriaExistente 
 					? "Producto agregado exitosamente" 
 					: $"Producto agregado exitosamente. Nueva categoría '{dto.Categoria}' creada automáticamente";
@@ -126,7 +152,7 @@ namespace PWA_Restaurante.Controllers
 
 		[HttpPut("Editar")]
 		[Authorize(Roles = "Admin")]
-		public IActionResult EditarProducto(EditarProductoDTO dto)
+		public IActionResult EditarProducto([FromForm] EditarProductoDTO dto, IFormFile img)
 		{
 			if (_validator.ValidateEditar(dto, out List<string> errores))
 			{
@@ -141,6 +167,32 @@ namespace PWA_Restaurante.Controllers
 				productoExistente.Activo = dto.Activo;
 
 				_repository.Update(productoExistente);
+
+				if (img != null)
+				{
+					if (img.ContentType != "image/jpeg")
+					{
+						return BadRequest(new { message = "Solo están permitidas imagenes .jpg" });
+					}
+
+					if (img.Length > 1024 * 1024 * 5)
+					{
+						return BadRequest(new { message = "No se permiten imagenes mayores a 5MB" });
+					}
+
+					var ruta = Path.Combine(_hostEnvironment.WebRootPath, "Img", dto.Id + ".jpg");
+					var directory = Path.GetDirectoryName(ruta);
+					if (!Directory.Exists(directory))
+					{
+						Directory.CreateDirectory(directory);
+					}
+
+					using (FileStream fs = new FileStream(ruta, FileMode.Create))
+					{
+						img.CopyTo(fs);
+					}
+				}
+
 				return Ok(new { message = "Producto actualizado exitosamente" });
 			}
 			else
@@ -190,6 +242,41 @@ namespace PWA_Restaurante.Controllers
 				.ToList();
 
 			return Ok(productos);
+		}
+
+		[HttpGet("PorCategoriaAdmin/{categoria}")]
+		[Authorize(Roles = "Admin")]
+		public IActionResult ObtenerProductosPorCategoriaAdmin(string categoria)
+		{
+			var productos = _repository.GetAll()
+				.Where(p => p.Categoria.ToLower() == categoria.ToLower())
+				.Select(p => new ProductoDTO
+				{
+					Id = p.Id,
+					Nombre = p.Nombre,
+					Precio = p.Precio,
+					Categoria = p.Categoria,
+					Descripcion = p.Descripcion,
+					TiempoPreparacion = p.TiempoPreparacion,
+					ImagenProducto = p.ImagenProducto,
+					Activo = p.Activo
+				})
+				.ToList();
+
+			return Ok(productos);
+		}
+
+		[HttpGet("Categorias")]
+		public IActionResult ObtenerCategorias()
+		{
+			var categorias = _repository.GetAll()
+				.Where(p => !string.IsNullOrEmpty(p.Categoria))
+				.Select(p => p.Categoria)
+				.Distinct()
+				.OrderBy(c => c)
+				.ToList();
+
+			return Ok(categorias);
 		}
 	}
 }

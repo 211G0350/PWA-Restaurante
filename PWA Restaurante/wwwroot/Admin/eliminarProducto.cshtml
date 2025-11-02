@@ -1,56 +1,128 @@
-@*     <!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Eliminar Producto - Panel Admin</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
- *@
+
  @{
     ViewData["Title"] = "Eliminar Producto - Panel Admin";
     Layout = "_LayoutAdmin";
 }
 
 <body>
+    <main>
+        <div class="modal-content">
+            <h2>Eliminar Producto</h2>
+            <p>¿Desea eliminar el siguiente producto?</p>
+            <p><a href="#" id="nombreProducto">Cargando...</a></p>
+            <p id="categoriaProducto">Categoría: Cargando...</p>
 
-  <!-- ENCABEZADO -->
- @*  <header>
-    <div class="panel-left">
-      <i class="fa-solid fa-user"></i>
-      <div>
-        <h2>Panel Admin</h2>
-        <p>Bienvenido</p>
-      </div>
-    </div>
+            <div class="modal-buttons">
+                <button class="btn-eliminar" onclick="eliminarProducto()"><i class="fa-solid fa-check"></i> Eliminar</button>
+                <button class="btn-cancelar" onclick="cancelar()"><i class="fa-solid fa-xmark"></i> Cancelar</button>
+            </div>
 
-    <div class="nav-center">
-      <a href="#"><i class="fa-solid fa-users"></i> Usuarios</a>
-      <a href="#" class="active"><i class="fa-solid fa-burger"></i> Productos</a>
-    </div>
+            <div class="imagen-central">
+                <img id="imagenProducto" src="" alt="Producto" onerror="this.src='/Img/default.jpg'">
+            </div>
+        </div>
+    </main>
 
-    <div class="panel-right">
-      <button><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
-    </div>
-  </header> *@
+    <script>
+        function getAuthToken() {
+          return localStorage.getItem('token') || sessionStorage.getItem('token');
+        }
 
-  <!-- CONTENIDO -->
-  <main>
-    <div class="modal-content">
-      <h2>Eliminar Producto</h2>
-      <p>¿Desea eliminar el siguiente producto?</p>
-      <p><a href="#">Cappuccino</a></p>
-      <p>Categoría: Bebidas</p>
+        function obtenerIdDeUrl() {
+          const path = window.location.pathname;
+          const parts = path.split('/');
+          const idIndex = parts.indexOf('eliminarProducto') + 1;
+          return idIndex < parts.length ? parseInt(parts[idIndex]) : null;
+        }
 
-      <div class="modal-buttons">
-        <button class="btn-eliminar"><i class="fa-solid fa-check"></i> Eliminar</button>
-        <button class="btn-cancelar"><i class="fa-solid fa-xmark"></i> Cancelar</button>
-      </div>
+        let productoId = null;
 
-      <div class="imagen-central">
-        <img src="renderindex.png" alt="Logo Central">
-      </div>
-    </div>
-  </main>
+        async function cargarProducto() {
+          productoId = obtenerIdDeUrl();
+          if (!productoId) {
+            alert('ID de producto no válido');
+            window.location.href = '/Admin/adminProducts';
+            return;
+          }
+
+          try {
+            const token = getAuthToken();
+            const headers = {
+              'Content-Type': 'application/json'
+            };
+            if (token) {
+              headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(`/api/Productos/ObtenerPorId/${productoId}`, { headers });
+            if (!response.ok) {
+              if (response.status === 404) {
+                alert('Producto no encontrado');
+                window.location.href = '/Admin/adminProducts';
+                return;
+              }
+              throw new Error('Error al cargar producto');
+            }
+
+            const producto = await response.json();
+
+            document.getElementById('nombreProducto').textContent = producto.nombre;
+            document.getElementById('categoriaProducto').textContent = `Categoría: ${producto.categoria}`;
+            document.getElementById('imagenProducto').src = `/Img/${producto.id}.jpg`;
+          } catch (error) {
+            console.error('Error al cargar producto:', error);
+            alert('Error al cargar el producto');
+            window.location.href = '/Admin/adminProducts';
+          }
+        }
+
+        function cancelar() {
+          window.location.href = '/Admin/adminProducts';
+        }
+
+        async function eliminarProducto() {
+          if (!productoId) {
+            alert('Error: ID de producto no válido');
+            return;
+          }
+
+          if (!confirm('¿Está seguro de que desea eliminar este producto?')) {
+            return;
+          }
+
+          try {
+            const token = getAuthToken();
+            const headers = {
+              'Content-Type': 'application/json'
+            };
+            if (token) {
+              headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(`/api/Productos/EliminarProducto/${productoId}`, {
+              method: 'DELETE',
+              headers: headers
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+              alert(result.message || 'Producto eliminado exitosamente');
+              window.location.href = '/Admin/adminProducts';
+            } else {
+              const errorMsg = Array.isArray(result) ? result.join(', ') : (result.message || 'Error al eliminar producto');
+              alert(errorMsg);
+            }
+          } catch (error) {
+            console.error('Error:', error);
+            alert('Error al eliminar producto. Por favor, intente nuevamente.');
+          }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+          cargarProducto();
+        });
+    </script>
 
 </body>
 

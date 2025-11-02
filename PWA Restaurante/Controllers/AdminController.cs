@@ -22,6 +22,24 @@ namespace PWA_Restaurante.Controllers
 		{
 			return View("~/wwwroot/Admin/adminProducts.cshtml");
 		}
+
+		[HttpGet("EditProducto/{id}")]
+		public IActionResult EditProducto(int id)
+		{
+			return View("~/wwwroot/Admin/EditProducto.cshtml");
+		}
+
+		[HttpGet("eliminarProducto/{id}")]
+		public IActionResult EliminarProducto(int id)
+		{
+			return View("~/wwwroot/Admin/eliminarProducto.cshtml");
+		}
+
+		[HttpGet("aggProductos")]
+		public IActionResult AggProductos()
+		{
+			return View("~/wwwroot/Admin/aggProductos.cshtml");
+		}
 	}
 }
 
