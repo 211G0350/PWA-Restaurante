@@ -161,20 +161,33 @@
         document.getElementById('formEditarProducto').addEventListener('submit', async (e) => {
           e.preventDefault();
 
-          const id = document.getElementById('productoId').value;
+          const id = obtenerIdDeUrl();
+          if (!id) {
+            alert('ID de producto no válido');
+            return;
+          }
+
           const formData = new FormData();
-          formData.append('Id', id);
+          formData.append('Id', id.toString());
           formData.append('Nombre', document.getElementById('nombre').value);
           formData.append('Categoria', document.getElementById('categoria').value);
           formData.append('Descripcion', document.getElementById('descripcion').value || '');
           formData.append('Precio', document.getElementById('precio').value);
           formData.append('TiempoPreparacion', document.getElementById('tiempo').value);
-          formData.append('Activo', document.getElementById('activo').value === 'true' ? 'true' : 'false');
+          formData.append('Activo', document.getElementById('activo').value);
           formData.append('ImagenProducto', '');
+          console.log('Enviando datos:', {
+            id: id,
+            nombre: document.getElementById('nombre').value,
+            categoria: document.getElementById('categoria').value,
+            precio: document.getElementById('precio').value,
+            tiempo: document.getElementById('tiempo').value,
+            activo: document.getElementById('activo').value
+          });
 
           const archivo = document.getElementById('imagen').files[0];
           if (archivo) {
-            formData.append('img', archivo);
+            formData.append('archivo', archivo);
           }
 
           try {
@@ -184,7 +197,7 @@
               headers['Authorization'] = `Bearer ${token}`;
             }
 
-            const response = await fetch('/api/Productos/Editar', {
+            const response = await fetch(`/api/Productos/Editar/${id}`, {
               method: 'PUT',
               headers: headers,
               body: formData
@@ -196,7 +209,19 @@
               alert(result.message || 'Producto actualizado exitosamente');
               window.location.href = '/Admin/adminProducts';
             } else {
-              const errorMsg = Array.isArray(result) ? result.join(', ') : (result.message || 'Error al actualizar producto');
+              let errorMsg = 'Error al actualizar producto';
+              
+              if (Array.isArray(result)) {
+                errorMsg = result.join(', ');
+              } else if (result.errors && Array.isArray(result.errors)) {
+                errorMsg = result.errors.join(', ');
+              } else if (result.message) {
+                errorMsg = result.message;
+              } else if (typeof result === 'string') {
+                errorMsg = result;
+              }
+              
+              console.error('Error completo:', result);
               alert(errorMsg);
             }
           } catch (error) {

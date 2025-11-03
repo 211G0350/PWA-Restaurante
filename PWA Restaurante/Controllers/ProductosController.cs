@@ -152,13 +152,57 @@ namespace PWA_Restaurante.Controllers
 			}
 		}
 
-		[HttpPut("Editar")]
+		[HttpPut("Editar/{id}")]
 		[Authorize(Roles = "Admin")]
-		public IActionResult EditarProducto([FromForm] EditarProductoDTO dto, IFormFile img)
+		public IActionResult EditarProducto(int id, [FromForm] EditarProductoDTO dto, IFormFile? archivo)
 		{
+			if (dto == null || string.IsNullOrEmpty(dto.Nombre))
+			{
+				var form = HttpContext.Request.Form;
+				dto = new EditarProductoDTO
+				{
+					Id = id,
+					Nombre = form["Nombre"].ToString() ?? string.Empty,
+					Categoria = form["Categoria"].ToString() ?? string.Empty,
+					Descripcion = form["Descripcion"].ToString(),
+					Precio = decimal.TryParse(form["Precio"], out decimal precio) ? precio : 0,
+					TiempoPreparacion = int.TryParse(form["TiempoPreparacion"], out int tiempo) ? tiempo : 0,
+					ImagenProducto = form["ImagenProducto"].ToString(),
+					Activo = form["Activo"].ToString().Equals("true", StringComparison.OrdinalIgnoreCase)
+				};
+				archivo = form.Files.GetFile("archivo");
+			}
+			else
+			{
+				dto.Id = id;
+				if (archivo == null)
+				{
+					archivo = HttpContext.Request.Form.Files.GetFile("archivo");
+				}
+			}
+
+			if (archivo == null && ModelState.ContainsKey("archivo"))
+			{
+				ModelState.Remove("archivo");
+			}
+			var relevantErrors = ModelState
+				.Where(x => x.Key != "archivo" && x.Value?.Errors.Count > 0)
+				.SelectMany(x => x.Value.Errors.Select(e => e.ErrorMessage))
+				.ToList();
+			
+			if (relevantErrors.Any())
+			{
+				return BadRequest(new { message = "Error de validación del modelo", errors = relevantErrors });
+			}
+			
 			if (_validator.ValidateEditar(dto, out List<string> errores))
 			{
-				var productoExistente = _repository.GetByIdWithTracking(dto.Id);
+				var productoExistente = _repository.GetByIdWithTracking(id);
+				
+				if (productoExistente == null)
+				{
+					return NotFound("Producto no encontrado");
+				}
 
 				productoExistente.Nombre = dto.Nombre;
 				productoExistente.Precio = dto.Precio;
@@ -170,14 +214,14 @@ namespace PWA_Restaurante.Controllers
 
 				_repository.Update(productoExistente);
 
-				if (img != null)
+				if (archivo != null)
 				{
-					if (img.ContentType != "image/jpeg")
+					if (archivo.ContentType != "image/jpeg")
 					{
 						return BadRequest(new { message = "Solo están permitidas imagenes .jpg" });
 					}
 
-					if (img.Length > 1024 * 1024 * 5)
+					if (archivo.Length > 1024 * 1024 * 5)
 					{
 						return BadRequest(new { message = "No se permiten imagenes mayores a 5MB" });
 					}
@@ -191,7 +235,7 @@ namespace PWA_Restaurante.Controllers
 
 					using (FileStream fs = new FileStream(ruta, FileMode.Create))
 					{
-						img.CopyTo(fs);
+						archivo.CopyTo(fs);
 					}
 				}
 
@@ -199,7 +243,7 @@ namespace PWA_Restaurante.Controllers
 			}
 			else
 			{
-				return BadRequest(errores);
+				return BadRequest(new { message = "Error de validación", errors = errores });
 			}
 		}
 
