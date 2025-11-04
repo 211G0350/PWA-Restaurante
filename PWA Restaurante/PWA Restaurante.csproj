@@ -26,6 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
+	  
     <Folder Include="wwwroot\Admin\Shared\" />
     <Folder Include="wwwroot\Cociner\Controllers\" />
     <Folder Include="wwwroot\Mesero\Controllers\" />

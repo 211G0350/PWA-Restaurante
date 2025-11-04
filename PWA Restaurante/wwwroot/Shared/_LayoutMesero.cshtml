@@ -1,17 +1,23 @@
-﻿<!DOCTYPE html>
+﻿@*
+    Layout base del Panel de Mesero
+*@
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Mesero</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link href="~/css/Shared.css" rel="stylesheet" />
+    <title>@ViewData["Title"] - Panel Mesero</title>
+
+    <!-- CSS principal del mesero -->
+  @*   <link rel="stylesheet" href="~/css/Admin.css" /> *@
+    <link rel="stylesheet" href="~/css/mes.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
 <body>
+    <!-- 🔸 Encabezado -->
     <header class="top-bar">
         <div class="header-left">
-            <img src="usuarios.png" alt="Usuario" class="user-logo">
+            <img src="~/img/usuarios.png" alt="Usuario" class="user-logo" />
             <div>
                 <h2>Panel Mesero</h2>
                 <p>Bienvenido</p>
@@ -23,7 +29,10 @@
         </div>
     </header>
 
+    <main class="content">
+        @RenderBody()  <!-- 🔹 Aquí se insertará el contenido de panelMesero.cshtml -->
+    </main>
 
-    
+    @RenderSection("Scripts", required: false)
 </body>
 </html>

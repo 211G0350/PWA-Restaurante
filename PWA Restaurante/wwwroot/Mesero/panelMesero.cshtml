@@ -1,0 +1,36 @@
+@{
+    Layout = "~/wwwroot/Shared/_LayoutMesero.cshtml";
+    ViewData["Title"] = "Panel Mesero";
+}
+
+<button class="new-order-btn"><i class="fa-solid fa-plus"></i> CREAR NUEVA ORDEN</button>
+
+<section class="orders-section">
+    <h3><i class="fa-regular fa-clock"></i> Órdenes Pendientes</h3>
+    <div class="order-card">
+        <div class="order-header">
+            <h4>Mesa 2</h4>
+            <span class="status pending">Sin Enviar</span>
+        </div>
+        <div class="order-body">
+            <p class="time">12:16</p>
+            <p class="price">$7.50</p>
+        </div>
+        <button class="details-btn"><i class="fa-regular fa-eye"></i> Ver Detalles</button>
+    </div>
+</section>
+
+<section class="orders-section">
+    <h3><i class="fa-regular fa-clipboard"></i> Órdenes Activas (1)</h3>
+    <div class="order-card">
+        <div class="order-header">
+            <h4>Mesa 3</h4>
+            <span class="status sent">Enviado</span>
+        </div>
+        <div class="order-body">
+            <p class="time">12:20</p>
+            <p class="price">$4.50</p>
+        </div>
+        <button class="details-btn"><i class="fa-regular fa-eye"></i> Ver Detalles</button>
+    </div>
+</section>

@@ -1,0 +1,168 @@
+﻿body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #f4a460;
+    margin: 0;
+    padding: 0;
+    color: #3a2d1a;
+}
+
+/* Encabezado */
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #d97a2b;
+    color: white;
+    padding: 10px 20px;
+    border-bottom: 3px solid #a85a17;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+    .header-left h2 {
+        margin: 0;
+        font-size: 20px;
+    }
+
+    .header-left p {
+        margin: 0;
+        font-size: 13px;
+    }
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+    .icon-btn:hover {
+        color: #ffe3c1;
+    }
+
+.user-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid white;
+}
+
+/* Contenido principal */
+.content {
+    padding: 20px;
+}
+
+.new-order-btn {
+    background-color: #ffa51f;
+    border: 2px solid #a85a17;
+    color: black;
+    font-weight: bold;
+    font-size: 16px;
+    border-radius: 6px;
+    padding: 10px 20px;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+
+    .new-order-btn i {
+        margin-right: 6px;
+    }
+
+/* Secciones de órdenes */
+.orders-section {
+    background-color: #f7c48a;
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+    .orders-section h3 {
+        font-size: 18px;
+        margin-bottom: 10px;
+    }
+
+/* Tarjetas de órdenes */
+.order-card {
+    background-color: #fce3be;
+    border: 2px solid #f4b96d;
+    border-radius: 10px;
+    padding: 6px 10px;
+    margin-bottom: 8px;
+    max-width: 300px;
+    transition: transform 0.2s ease;
+}
+
+    .order-card:hover {
+        transform: scale(1.02);
+    }
+
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+    .order-header h4 {
+        font-size: 16px;
+        margin: 0;
+    }
+
+.status {
+    font-size: 11px;
+    padding: 3px 6px;
+    border-radius: 6px;
+    color: white;
+}
+
+    .status.pending {
+        background-color: #b08d4f;
+    }
+
+    .status.sent {
+        background-color: #e4ad4d;
+    }
+
+.order-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+}
+
+    .order-body .time {
+        color: red;
+        font-weight: bold;
+        font-size: 13px;
+    }
+
+    .order-body .price {
+        color: green;
+        font-weight: bold;
+        font-size: 16px;
+    }
+
+.details-btn {
+    width: 100%;
+    background-color: white;
+    border: 2px solid #a5a5a5;
+    border-radius: 6px;
+    padding: 6px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+    .details-btn:hover {
+        background-color: #f0f0f0;
+    }

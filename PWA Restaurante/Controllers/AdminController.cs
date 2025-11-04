@@ -1,3 +1,4 @@
+using AspNetCoreGeneratedDocument;
 using Microsoft.AspNetCore.Mvc;
 
 namespace PWA_Restaurante.Controllers
@@ -40,6 +41,14 @@ namespace PWA_Restaurante.Controllers
 		{
 			return View("~/wwwroot/Admin/aggProductos.cshtml");
 		}
-	}
+
+   //     [HttpGet("panelMesero")]
+   //     public IActionResult PanelMesero()
+   //     {
+			//return View("~/wwwroot/Mesero/PanelMesero.cshtml");
+
+
+   //     }
+    }
 }
 

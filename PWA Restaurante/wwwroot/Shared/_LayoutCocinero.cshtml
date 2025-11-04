@@ -1,15 +1,21 @@
-﻿<!DOCTYPE html>
+﻿@*
+    Layout base para el panel de cocina
+*@
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Cocina</title>
-    <link href="~/css/Shared.css" rel="stylesheet" />
+    <title>@ViewData["Title"] - Panel Cocina</title>
+
+    <link href="~/css/cocinero.css" rel="stylesheet" />
+    <link href="~/css/Admin.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
 </head>
 <body>
     <header class="header">
         <div class="header-left">
-            <img src="usuarios.png" alt="Usuarios">
+            <img src="~/img/usuarios.png" alt="Usuarios" />
             <div>
                 <h2>Panel Cocina</h2>
                 <small>Bienvenido</small>
@@ -17,16 +23,19 @@
         </div>
         <div class="header-right">
             <button class="btn-header">
-                <img src="sincronizar.png" alt="Sync">
-
+                <img src="~/img/sincronizar.png" alt="Sync" />
             </button>
             <button class="btn-header">
-                <img src="opcion-de-cerrar-sesion.png" alt="Salir">
+                <img src="~/img/opcion-de-cerrar-sesion.png" alt="Salir" />
                 Salir
             </button>
         </div>
     </header>
 
- 
+    <main class="container">
+        @RenderBody()
+    </main>
+
+    @RenderSection("Scripts", required: false)
 </body>
 </html>
