@@ -27,7 +27,7 @@ namespace PWA_Restaurante.Controllers
 		public JwtService Service { get; }
 
 
-		[Authorize]
+		[Authorize(Roles = "Admin")]
 		[HttpPost("Registrar")]
 		public IActionResult Registrar(UsuarioDTO dto)
 		{
@@ -110,14 +110,16 @@ namespace PWA_Restaurante.Controllers
 		}
 
 		[Authorize(Roles = "Admin")]
-		[HttpPut("Editar")]
-		public IActionResult Editar(EditarUsuarioDTO dto)
+		[HttpPut("Editar/{id}")]
+		public IActionResult Editar(int id, EditarUsuarioDTO dto)
 		{
-			var usuarioExistente = Repository.GetAll().FirstOrDefault(x => x.Id == dto.Id);
+			var usuarioExistente = Repository.GetAll().FirstOrDefault(x => x.Id == id);
 			if (usuarioExistente == null)
 			{
 				return NotFound("Usuario no encontrado");
 			}
+
+			dto.Id = id;
 
 			if (Validator.ValidateEdicion(dto, out List<string> errores))
 			{

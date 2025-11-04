@@ -42,13 +42,23 @@ namespace PWA_Restaurante.Controllers
 			return View("~/wwwroot/Admin/aggProductos.cshtml");
 		}
 
-   //     [HttpGet("panelMesero")]
-   //     public IActionResult PanelMesero()
-   //     {
-			//return View("~/wwwroot/Mesero/PanelMesero.cshtml");
+		[HttpGet("EditaUsuario/{id}")]
+		public IActionResult EditaUsuario(int id)
+		{
+			return View("~/wwwroot/Admin/EditaUsuario.cshtml");
+		}
 
+		[HttpGet("EliminaciondUsuario/{id}")]
+		public IActionResult EliminaciondUsuario(int id)
+		{
+			return View("~/wwwroot/Admin/EliminaciondUsuarios.cshtml");
+		}
 
-   //     }
-    }
+		[HttpGet("AggUsuario")]
+		public IActionResult AggUsuario()
+		{
+			return View("~/wwwroot/Admin/AggUsuario.cshtml");
+		}
+	}
 }
 

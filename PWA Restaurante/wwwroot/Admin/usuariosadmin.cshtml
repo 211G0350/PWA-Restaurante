@@ -1,66 +1,111 @@
-<!--<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Panel Admin - Usuarios</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-</head>-->
+
 @{
     ViewData["Title"] = "Panel Admin - Usuarios";
     Layout = "_LayoutAdmin";
 }
 <body>
 
-    <!--<header>
-        <div class="panel-left">
-            <i class="fa-solid fa-user"></i>
-            <div>
-                <h2>Panel Admin</h2>
-                <p>Bienvenido</p>
-            </div>
-        </div>
-
-        <div class="nav-center">
-            <a href="#" class="active"><i class="fa-solid fa-users"></i> Usuarios</a>
-            <a href="#"><i class="fa-solid fa-burger"></i> Productos</a>
-        </div>
-
-        <div class="panel-right">
-            <button><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
-        </div>
-    </header>-->
-
     <main class="main-content">
         <div class="sidebar">
-            <button class="btn-agregar"><i class="fa-solid fa-plus"></i> AGREGAR NUEVO USUARIO</button>
+            <button class="btn-agregar" id="btnAgregarUsuario"><i class="fa-solid fa-plus"></i> AGREGAR NUEVO USUARIO</button>
 
             <div class="lista-usuarios">
                 <h3><i class="fa-solid fa-user-group"></i> Lista de Usuarios:</h3>
-
-                <div class="usuario-card">
-                    <p><strong>Nombre:</strong> Leonardo</p>
-                    <p><strong>Rol:</strong> Mesero</p>
-                    <div class="acciones">
-                        <button class="editar"><i class="fa-solid fa-pen"></i></button>
-                        <button class="eliminar"><i class="fa-solid fa-trash"></i></button>
-                    </div>
-                </div>
-
-                <div class="usuario-card">
-                    <p><strong>Nombre:</strong> Osiel</p>
-                    <p><strong>Rol:</strong> Cocinero</p>
-                    <div class="acciones">
-                        <button class="editar"><i class="fa-solid fa-pen"></i></button>
-                        <button class="eliminar"><i class="fa-solid fa-trash"></i></button>
-                    </div>
+                <div id="usuariosContainer">
                 </div>
             </div>
         </div>
-
-        <!--<div class="imagen-central">
-        <img src="renderindex.png" alt="Logo central">
-    </div>-->
     </main>
+
+    <script>
+        function getAuthToken() {
+            return localStorage.getItem('token') || sessionStorage.getItem('token');
+        }
+
+        async function fetchWithAuth(url, options = {}) {
+            const token = getAuthToken();
+            const headers = {
+                'Content-Type': 'application/json',
+                ...options.headers
+            };
+            
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(url, {
+                ...options,
+                headers
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    alert('Sesión expirada. Por favor, inicia sesión nuevamente.');
+                    window.location.href = '/';
+                    return null;
+                }
+                throw new Error(`Error: ${response.status} ${response.statusText}`);
+            }
+
+            return response.json();
+        }
+
+        async function cargarUsuarios() {
+            try {
+                const usuarios = await fetchWithAuth('/api/Usuarios/ObtenerTodos');
+                
+                if (!usuarios) return;
+
+                const container = document.getElementById('usuariosContainer');
+                container.innerHTML = '';
+
+                if (usuarios.length === 0) {
+                    container.innerHTML = '<p>No hay usuarios registrados</p>';
+                    return;
+                }
+
+                usuarios.forEach(usuario => {
+                    const usuarioCard = document.createElement('div');
+                    usuarioCard.className = 'usuario-card';
+                    const nombre = usuario.Nombre || usuario.nombre || '';
+                    const rol = usuario.Rol || usuario.rol || '';
+                    const id = usuario.Id || usuario.id || 0;
+                    usuarioCard.innerHTML = `
+                        <p><strong>Nombre:</strong> ${nombre}</p>
+                        <p><strong>Rol:</strong> ${rol}</p>
+                        <div class="acciones">
+                            <button class="editar" data-id="${id}"><i class="fa-solid fa-pen"></i></button>
+                            <button class="eliminar" data-id="${id}"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    `;
+                    container.appendChild(usuarioCard);
+                });
+
+                document.querySelectorAll('.editar').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const userId = this.getAttribute('data-id');
+                        window.location.href = `/Admin/EditaUsuario/${userId}`;
+                    });
+                });
+
+                document.querySelectorAll('.eliminar').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const userId = this.getAttribute('data-id');
+                        window.location.href = `/Admin/EliminaciondUsuario/${userId}`;
+                    });
+                });
+
+            } catch (error) {
+                console.error('Error al cargar usuarios:', error);
+                alert('Error al cargar los usuarios. Por favor, recarga la página.');
+            }
+        }
+
+        document.getElementById('btnAgregarUsuario').addEventListener('click', function() {
+            window.location.href = '/Admin/AggUsuario';
+        });
+
+        document.addEventListener('DOMContentLoaded', cargarUsuarios);
+    </script>
 
 </body>

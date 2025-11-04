@@ -1,12 +1,3 @@
-@* <!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Eliminar Usuario - Panel Admin</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
-</head> *@
 @{
     ViewData["Title"] = "Eliminar Usuario - Panel Admin";
     Layout = "_LayoutAdmin";
@@ -14,69 +5,129 @@
 
 <body>
 
-  <!-- Encabezado -->
-@*   <header>
-    <div class="panel-left">
-      <i class="fa-solid fa-user"></i>
-      <div>
-        <h2>Panel Admin</h2>
-        <p>Bienvenido</p>
-      </div>
-    </div>
-
-    <div class="nav-center">
-      <a href="#"><i class="fa-solid fa-users"></i> Usuarios</a>
-      <a href="#"><i class="fa-solid fa-burger"></i> Productos</a>
-    </div>
-
-    <div class="panel-right">
-      <button><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
-    </div>
-  </header> *@
-
-  <!-- Contenido -->
-  <main class="main-content">
-    <div class="sidebar">
-      <button class="btn-agregar"><i class="fa-solid fa-plus"></i> AGREGAR NUEVO USUARIO</button>
-
-      <div class="lista-usuarios">
-        <h3><i class="fa-solid fa-user-group"></i> Lista de Usuarios:</h3>
-
-        <div class="usuario-card">
-          <p><strong>Nombre:</strong> Leonardo</p>
-          <p><strong>Rol:</strong> Admin</p>
-          <div class="acciones">
-            <button class="editar"><i class="fa-solid fa-pen"></i></button>
-          </div>
-        </div>
-
-        <div class="usuario-card">
-          <p><strong>Nombre:</strong> Osiel</p>
-          <p><strong>Rol:</strong> Cocinero</p>
-          <div class="acciones">
-            <button class="editar"><i class="fa-solid fa-pen"></i></button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="imagen-central">
-      <img src="renderindex.png" alt="Logo central">
-    </div>
-  </main>
-
-  <!-- Modal Eliminar Usuario -->
   <div class="modal">
     <div class="modal-content">
       <h2>Eliminar Usuario</h2>
+      
+      <div id="mensajeError" style="display: none; color: red; margin-bottom: 10px;"></div>
+      <div id="cargando" style="display: none; text-align: center; margin: 20px 0;">Cargando datos del usuario...</div>
+      
       <p>¿Desea eliminar al siguiente usuario?</p>
-      <p><a href="#">Osiel</a></p>
-      <p>Rol: Cocinero</p>
+      <div id="datosUsuario" style="margin: 20px 0;">
+        <p><strong>Nombre:</strong> <span id="nombreUsuario"></span></p>
+        <p><strong>Rol:</strong> <span id="rolUsuario"></span></p>
+      </div>
+      
       <div class="modal-buttons">
-        <button class="btn-eliminar">Eliminar</button>
-        <button class="btn-cancelar">Cancelar</button>
+        <button class="btn-eliminar" id="btnEliminar">Eliminar</button>
+        <button class="btn-cancelar" id="btnCancelar">Cancelar</button>
       </div>
     </div>
   </div>
+
+<script>
+    function getAuthToken() {
+        return localStorage.getItem('token') || sessionStorage.getItem('token');
+    }
+
+    function obtenerIdDeUrl() {
+        const path = window.location.pathname;
+        const parts = path.split('/');
+        const idIndex = parts.indexOf('EliminaciondUsuario') + 1;
+        return idIndex < parts.length ? parseInt(parts[idIndex]) : null;
+    }
+
+    let userId = null;
+
+    async function cargarUsuario() {
+        userId = obtenerIdDeUrl();
+        if (!userId) {
+            alert('ID de usuario no válido');
+            window.location.href = '/Admin/usuariosadmin';
+            return;
+        }
+
+        try {
+            const token = getAuthToken();
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(`/api/Usuarios/ObtenerPorId/${userId}`, { headers });
+            if (!response.ok) {
+                if (response.status === 404) {
+                    alert('Usuario no encontrado');
+                    window.location.href = '/Admin/usuariosadmin';
+                    return;
+                }
+                throw new Error('Error al cargar usuario');
+            }
+
+            const usuario = await response.json();
+
+            document.getElementById('nombreUsuario').textContent = usuario.Nombre || usuario.nombre || '';
+            document.getElementById('rolUsuario').textContent = usuario.Rol || usuario.rol || '';
+            document.getElementById('datosUsuario').style.display = 'block';
+        } catch (error) {
+            console.error('Error al cargar usuario:', error);
+            alert('Error al cargar el usuario');
+            window.location.href = '/Admin/usuariosadmin';
+        } finally {
+            document.getElementById('cargando').style.display = 'none';
+        }
+    }
+
+    function cancelar() {
+        window.location.href = '/Admin/usuariosadmin';
+    }
+
+    async function eliminarUsuario() {
+        if (!userId) {
+            alert('Error: ID de usuario no válido');
+            return;
+        }
+
+        if (!confirm('¿Está seguro de que desea eliminar este usuario? Esta acción no se puede deshacer.')) {
+            return;
+        }
+
+        try {
+            const token = getAuthToken();
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(`/api/Usuarios/Eliminar/${userId}`, {
+                method: 'DELETE',
+                headers: headers
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                alert(result.message || 'Usuario eliminado exitosamente');
+                window.location.href = '/Admin/usuariosadmin';
+            } else {
+                const errorMsg = Array.isArray(result) ? result.join(', ') : (result.message || 'Error al eliminar usuario');
+                document.getElementById('mensajeError').textContent = errorMsg;
+                document.getElementById('mensajeError').style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Error al eliminar usuario:', error);
+            alert('Error al eliminar el usuario');
+        }
+    }
+
+    document.getElementById('btnEliminar').addEventListener('click', eliminarUsuario);
+    document.getElementById('btnCancelar').addEventListener('click', cancelar);
+
+    document.addEventListener('DOMContentLoaded', cargarUsuario);
+</script>
 
 </body>
