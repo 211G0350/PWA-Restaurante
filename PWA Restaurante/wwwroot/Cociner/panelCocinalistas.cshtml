@@ -1,0 +1,164 @@
+@{
+    Layout = "_LayoutCocinero";
+    ViewData["Title"] = "Panel Cocina";
+}
+
+<div class="columna" id="nuevos">
+    <h2>🟦 Nuevos (0)</h2>
+    <div class="lista" id="listaNuevos">
+        <p class="vacio">No hay órdenes nuevas</p>
+    </div>
+</div>
+
+<div class="columna" id="preparacion">
+    <h2>🟧 En Preparación (0)</h2>
+    <div class="lista" id="listaPreparacion">
+        <p class="vacio">No hay órdenes en preparación</p>
+    </div>
+</div>
+
+<div class="columna" id="listos">
+    <h2>🟩 Listos (0)</h2>
+    <div class="lista" id="listaListos">
+        <p class="vacio">No hay órdenes listas</p>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener("DOMContentLoaded", async () => {
+        const token = localStorage.getItem("token");
+        const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+
+        if (!token || usuario.rol?.toLowerCase() !== "cocinero") {
+            alert("Acceso no autorizado. Inicia sesión como cocinero.");
+            window.location.href = "/";
+            return;
+        }
+
+        await cargarPedidos();
+
+        function crearTarjeta(pedido) {
+            const div = document.createElement("div");
+            div.className = "tarjeta";
+            div.innerHTML = `
+                <h3>Mesa ${pedido.mesa}</h3>
+                <p>Orden #${pedido.id}</p>
+                <p class="hora">🕓 ${pedido.hora}</p>
+                <p class="tomado">Tomado por: ${pedido.mesero}</p>
+                <p class="precio">$${pedido.total.toFixed(2)}</p>
+                <div class="acciones">
+                    <button class="ver" onclick="verOrden(${pedido.id})">👁️ Ver</button>
+                    ${pedido.estado === "Nuevo"
+                    ? `<button class="listo" onclick="moverAListos(this, ${pedido.id})">✔️ Listo</button>`
+                    : `<button class="eliminar" onclick="eliminarOrden(${pedido.id}, this)"> Eliminar</button>`
+                }
+                </div>
+            `;
+            return div;
+        }
+
+        async function cargarPedidos() {
+            try {
+                const response = await fetch("https://localhost:7209/api/Cocina/Enviados", {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    alert("Error al obtener pedidos del servidor.");
+                    return;
+                }
+
+                const pedidos = await response.json();
+                renderPedidos(pedidos);
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Error de conexión al cargar pedidos.");
+            }
+        }
+
+        function renderPedidos(pedidos) {
+            const nuevos = document.getElementById("listaNuevos");
+            const preparacion = document.getElementById("listaPreparacion");
+            const listos = document.getElementById("listaListos");
+
+            nuevos.innerHTML = "";
+            preparacion.innerHTML = "";
+            listos.innerHTML = "";
+
+            let contadores = { nuevos: 0, prep: 0, listos: 0 };
+
+            pedidos.forEach(p => {
+                const tarjeta = crearTarjeta(p);
+                if (p.estado === "Nuevo") {
+                    nuevos.appendChild(tarjeta);
+                    contadores.nuevos++;
+                } else if (p.estado === "Preparacion") {
+                    preparacion.appendChild(tarjeta);
+                    contadores.prep++;
+                } else if (p.estado === "Listo") {
+                    listos.appendChild(tarjeta);
+                    contadores.listos++;
+                }
+            });
+
+            if (contadores.nuevos === 0)
+                nuevos.innerHTML = `<p class="vacio">No hay órdenes nuevas</p>`;
+            if (contadores.prep === 0)
+                preparacion.innerHTML = `<p class="vacio">No hay órdenes en preparación</p>`;
+            if (contadores.listos === 0)
+                listos.innerHTML = `<p class="vacio">No hay órdenes listas</p>`;
+
+            document.querySelector("#nuevos h2").textContent = `🟦 Nuevos (${contadores.nuevos})`;
+            document.querySelector("#preparacion h2").textContent = `🟧 En Preparación (${contadores.prep})`;
+            document.querySelector("#listos h2").textContent = `🟩 Listos (${contadores.listos})`;
+        }
+    });
+
+    function verOrden(id) {
+        alert(`📝 Detalles de la orden #${id}`);
+    }
+
+    function moverAListos(btn, id) {
+        const tarjeta = btn.closest(".tarjeta");
+        document.getElementById("listaListos").appendChild(tarjeta);
+        tarjeta.querySelector(".listo")?.remove();
+
+        const btnEliminar = document.createElement("button");
+        btnEliminar.textContent = " Eliminar";
+        btnEliminar.className = "eliminar";
+        btnEliminar.onclick = () => eliminarOrden(id, btnEliminar);
+        tarjeta.querySelector(".acciones").appendChild(btnEliminar);
+        actualizarContadores();
+    }
+
+    function eliminarOrden(id, btn) {
+        const tarjeta = btn.closest(".tarjeta");
+        tarjeta.remove();
+        actualizarContadores();
+        alert(`🗑️ Orden #${id} eliminada`);
+    }
+
+    function actualizarContadores() {
+        const nuevos = document.querySelectorAll("#listaNuevos .tarjeta").length;
+        const prep = document.querySelectorAll("#listaPreparacion .tarjeta").length;
+        const listos = document.querySelectorAll("#listaListos .tarjeta").length;
+
+        document.querySelector("#nuevos h2").textContent = `🟦 Nuevos (${nuevos})`;
+        document.querySelector("#preparacion h2").textContent = `🟧 En Preparación (${prep})`;
+        document.querySelector("#listos h2").textContent = `🟩 Listos (${listos})`;
+    }
+
+    function sincronizar() {
+        alert("🔄 Sincronizando órdenes con el servidor...");
+        location.reload();
+    }
+
+    function salir() {
+        if (confirm("¿Deseas cerrar sesión?")) {
+            localStorage.clear();
+            window.location.href = "/";
+        }
+    }
+</script>
+}

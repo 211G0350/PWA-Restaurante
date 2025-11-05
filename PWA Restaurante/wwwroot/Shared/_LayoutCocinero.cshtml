@@ -1,32 +1,30 @@
 ﻿@*
-    Layout base para el panel de cocina
+ Layout principal para el panel del cocinero
 *@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Panel Cocina</title>
-
-    <link href="~/css/cocinero.css" rel="stylesheet" />
-    <link href="~/css/Admin.css" rel="stylesheet" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/panelCocina.css" />
 </head>
 <body>
     <header class="header">
         <div class="header-left">
-            <img src="~/img/usuarios.png" alt="Usuarios" />
+            <img src="/Img/usuarios.png" alt="Usuarios">
             <div>
                 <h2>Panel Cocina</h2>
-                <small>Bienvenido</small>
+                <small>Bienvenido, <span id="nombreUsuario">Cocinero</span></small>
             </div>
         </div>
         <div class="header-right">
-            <button class="btn-header">
-                <img src="~/img/sincronizar.png" alt="Sync" />
+            <button class="btn-header" onclick="sincronizar()">
+                <img src="/Img/sincronizar.png" alt="Sync">
+                Sincronizar
             </button>
-            <button class="btn-header">
-                <img src="~/img/opcion-de-cerrar-sesion.png" alt="Salir" />
+            <button class="btn-header" onclick="cerrarSesion()">
+                <img src="/Img/opcion-de-cerrar-sesion.png" alt="Salir">
                 Salir
             </button>
         </div>
@@ -37,5 +35,22 @@
     </main>
 
     @RenderSection("Scripts", required: false)
+    <script>
+        function cerrarSesion() {
+            localStorage.clear();
+            window.location.href = "/";
+        }
+
+        function sincronizar() {
+            location.reload();
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+            if (usuario?.nombre) {
+                document.getElementById("nombreUsuario").textContent = usuario.nombre;
+            }
+        });
+    </script>
 </body>
 </html>
