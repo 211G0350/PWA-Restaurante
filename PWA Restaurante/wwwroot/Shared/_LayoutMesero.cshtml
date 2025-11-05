@@ -1,13 +1,10 @@
-﻿
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@ViewData["Title"] - Panel Mesero</title>
 
-    <!-- CSS principal del mesero -->
-  @*   <link rel="stylesheet" href="~/css/Admin.css" /> *@
     <link rel="stylesheet" href="~/css/mes.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
@@ -17,12 +14,12 @@
             <img src="~/img/usuarios.png" alt="Usuario" class="user-logo" />
             <div>
                 <h2>Panel Mesero</h2>
-                <p>Bienvenido</p>
+                <small>Bienvenido, <span id="nombreUsuario">Mesero</span></small>
             </div>
         </div>
         <div class="header-right">
-            <button class="icon-btn"><i class="fa-solid fa-rotate-right"></i></button>
-            <button class="icon-btn"><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
+            <button class="icon-btn" onclick="sincronizar()"><i class="fa-solid fa-rotate-right"></i></button>
+            <button class="icon-btn" onclick="cerrarSesion()"><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
         </div>
     </header>
 
@@ -30,5 +27,22 @@
         @RenderBody() 
     </main>
 
+    <script>
+        function cerrarSesion() {
+            localStorage.clear();
+            window.location.href = "/";
+        }
+
+        function sincronizar() {
+            location.reload();
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+            if (usuario?.nombre) {
+                document.getElementById("nombreUsuario").textContent = usuario.nombre;
+            }
+        });
+    </script>
 </body>
 </html>

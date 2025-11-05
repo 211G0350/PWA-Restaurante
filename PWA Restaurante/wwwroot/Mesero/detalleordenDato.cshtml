@@ -1,0 +1,142 @@
+@{
+    Layout = "_LayoutMesero";
+    ViewData["Title"] = "Detalles de Orden";
+}
+
+<div class="modal">
+    <div class="modal-header">
+        <h2 id="tituloOrden">Detalles de Orden</h2>
+        <span class="cerrar" onclick="window.location.href='/Mesero/panelMesero'">&times;</span>
+    </div>
+
+    <div class="modal-body">
+        <div id="cargando" style="display: none; text-align: center; padding: 20px;">Cargando detalles...</div>
+        <div id="contenidoPedido" style="display: none;">
+            <div class="info-principal">
+                <div class="columna">
+                    <p><strong>🪑 Mesa</strong><br><span id="numMesa"></span></p>
+                    <p><strong>👨‍🍳 Mesero</strong><br><span id="nombreMesero"></span></p>
+                </div>
+
+                <div class="columna">
+                    <p><strong>🕒 Hora</strong><br><span id="fechaHora"></span></p>
+                    <p><strong>Estado</strong><br><span class="estado" id="estadoPedido"></span></p>
+                </div>
+
+                <div class="notas">
+                    <label for="notas">Notas</label><br>
+                    <textarea id="notas" rows="4" readonly></textarea>
+                </div>
+            </div>
+
+            <h3>Productos</h3>
+            <div id="listaProductos">
+                <!-- Los productos se cargarán dinámicamente aquí -->
+            </div>
+
+            <div class="total-container">
+                <span>Total:</span>
+                <strong id="totalPedido">$0.00</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function getAuthToken() {
+        return localStorage.getItem('token') || sessionStorage.getItem('token');
+    }
+
+    function obtenerIdDeUrl() {
+        const path = window.location.pathname;
+        const parts = path.split('/');
+        const idIndex = parts.indexOf('detalleordenDato') + 1;
+        return idIndex < parts.length ? parseInt(parts[idIndex]) : null;
+    }
+
+    function formatearFecha(fecha) {
+        const date = new Date(fecha);
+        return date.toLocaleString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    async function cargarDetallesPedido() {
+        const pedidoId = obtenerIdDeUrl();
+        if (!pedidoId) {
+            alert('ID de pedido no válido');
+            window.location.href = '/Mesero/panelMesero';
+            return;
+        }
+
+        document.getElementById('cargando').style.display = 'block';
+        document.getElementById('contenidoPedido').style.display = 'none';
+
+        try {
+            const token = getAuthToken();
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(`/api/Pedidos/VerDetalles/${pedidoId}`, { headers });
+            if (!response.ok) {
+                if (response.status === 404) {
+                    alert('Pedido no encontrado');
+                    window.location.href = '/Mesero/panelMesero';
+                    return;
+                }
+                throw new Error('Error al cargar detalles del pedido');
+            }
+
+            const pedido = await response.json();
+
+            document.getElementById('tituloOrden').textContent = `Detalles de Orden #${pedido.Id || pedido.id}`;
+            document.getElementById('numMesa').textContent = pedido.NumMesa || pedido.numMesa || '';
+            document.getElementById('nombreMesero').textContent = pedido.UsuarioNombre || pedido.usuarioNombre || '';
+            document.getElementById('fechaHora').textContent = formatearFecha(pedido.TomadoEn || pedido.tomadoEn);
+            document.getElementById('estadoPedido').textContent = pedido.Estado || pedido.estado || '';
+            document.getElementById('notas').value = pedido.NotasEspeciales || pedido.notasEspeciales || '';
+            document.getElementById('totalPedido').textContent = `$${(pedido.PrecioTotal || pedido.precioTotal).toFixed(2)}`;
+
+            const listaProductos = document.getElementById('listaProductos');
+            listaProductos.innerHTML = '';
+
+            if (pedido.Detalles && pedido.Detalles.length > 0) {
+                pedido.Detalles.forEach(detalle => {
+                    const productoDiv = document.createElement('div');
+                    productoDiv.className = 'producto';
+                    productoDiv.innerHTML = `
+                        <div class="detalles">
+                            <p class="nombre">${detalle.NombreProducto || detalle.nombreProducto || ''}</p>
+                            <p class="cantidad">Cantidad: ${detalle.Cantidad || detalle.cantidad || 0}</p>
+                        </div>
+                        <div class="precio">
+                            <p class="total">$${(detalle.Subtotal || detalle.subtotal || 0).toFixed(2)}</p>
+                            <p class="unitario">Precio unitario: $${(detalle.PrecioUnitario || detalle.precioUnitario || 0).toFixed(2)}</p>
+                        </div>
+                    `;
+                    listaProductos.appendChild(productoDiv);
+                });
+            } else {
+                listaProductos.innerHTML = '<p>No hay productos en este pedido</p>';
+            }
+
+            document.getElementById('cargando').style.display = 'none';
+            document.getElementById('contenidoPedido').style.display = 'block';
+        } catch (error) {
+            console.error('Error al cargar detalles del pedido:', error);
+            alert('Error al cargar los detalles del pedido');
+            window.location.href = '/Mesero/panelMesero';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', cargarDetallesPedido);
+</script>
+

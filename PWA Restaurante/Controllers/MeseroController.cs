@@ -10,5 +10,17 @@ namespace PWA_Restaurante.Controllers
         {
             return View("~/wwwroot/Mesero/panelMesero.cshtml");
         }
+
+        [HttpGet("crearNuevaOr")]
+        public IActionResult CrearNuevaOr()
+        {
+            return View("~/wwwroot/Mesero/crearNuevaOr.cshtml");
+        }
+
+        [HttpGet("detalleordenDato/{id}")]
+        public IActionResult DetalleordenDato(int id)
+        {
+            return View("~/wwwroot/Mesero/detalleordenDato.cshtml");
+        }
     }
 }

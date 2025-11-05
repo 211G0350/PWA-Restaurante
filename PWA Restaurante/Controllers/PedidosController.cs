@@ -71,6 +71,7 @@ namespace PWA_Restaurante.Controllers
 		public IActionResult ObtenerTodosLosPedidos()
 		{
 			var pedidos = _pedidoRepository.GetAll()
+				.Where(p => p.Estado != "pendiente")
 				.Select(p => new PedidoResumen_DTO
 				{
 					Id = p.Id,
