@@ -1,157 +1,103 @@
-
 @{
     ViewData["Title"] = "Panel Admin - Productos";
     Layout = "_LayoutAdmin";
 }
-<body>
-    <main>
-        <div class="add-product-container">
-            <button class="add-product-btn">Agregar Producto <i class="fa-solid fa-plus"></i></button>
+
+<div class="add-product-container">
+    <button id="btn-agregar" class="add-product-btn">Agregar Producto <i class="fa-solid fa-plus"></i></button>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+    <div class="tab active" data-tab="bebidas">Bebidas</div>
+    <div class="tab" data-tab="comidas">Comidas</div>
+    <div class="tab" data-tab="ensaladas">Ensaladas</div>
+</div>
+
+<!-- PRODUCTOS -->
+<div class="productos-grid">
+    <div class="producto-card">
+        <div class="producto-info">
+            <h4>Agua Natural</h4>
+            <p>Agua purificada</p>
+            <p>Categoría: Bebidas</p>
+            <p class="precio">$1.50</p>
+            <p class="tiempo"><i class="fa-regular fa-clock"></i> 2 min</p>
         </div>
-
-        <!-- TABS -->
-        <div class="tabs" id="tabsContainer">
-
+        <img src="https://cdn-icons-png.flaticon.com/512/1047/1047711.png" alt="Agua">
+        <div class="acciones">
+            <button>Editar</button>
+            <button class="eliminar">Eliminar</button>
         </div>
+    </div>
 
-        <!-- PRODUCTOS -->
-        <div class="productos-grid" id="productosGrid">
+    <div class="producto-card">
+        <div class="producto-info">
+            <h4>Café Americano</h4>
+            <p>Café negro tradicional</p>
+            <p>Categoría: Bebidas</p>
+            <p class="precio">$2.50</p>
+            <p class="tiempo"><i class="fa-regular fa-clock"></i> 5 min</p>
         </div>
-    </main>
+        <img src="https://cdn-icons-png.flaticon.com/512/924/924514.png" alt="Café">
+        <div class="acciones">
+            <button>Editar</button>
+            <button class="eliminar">Eliminar</button>
+        </div>
+    </div>
 
+    <div class="producto-card">
+        <div class="producto-info">
+            <h4>Cappuccino</h4>
+            <p>Café con leche espumada</p>
+            <p>Categoría: Bebidas</p>
+            <p class="precio">$3.00</p>
+            <p class="tiempo"><i class="fa-regular fa-clock"></i> 7 min</p>
+        </div>
+        <img src="https://cdn-icons-png.flaticon.com/512/760/760606.png" alt="Cappuccino">
+        <div class="acciones">
+            <button>Editar</button>
+            <button class="eliminar">Eliminar</button>
+        </div>
+    </div>
+
+    <div class="producto-card">
+        <div class="producto-info">
+            <h4>Refresco</h4>
+            <p>Bebida gaseosa variada</p>
+            <p>Categoría: Bebidas</p>
+            <p class="precio">$2.00</p>
+            <p class="tiempo"><i class="fa-regular fa-clock"></i> 3 min</p>
+        </div>
+        <img src="https://cdn-icons-png.flaticon.com/512/3128/3128208.png" alt="Refresco">
+        <div class="acciones">
+            <button>Editar</button>
+            <button class="eliminar">Eliminar</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
     <script>
-        let categorias = [];
-        let categoriaSeleccionada = null;
+        // Control de pestañas
+        const tabs = document.querySelectorAll('.tab');
+        const addBtn = document.getElementById('btn-agregar');
 
-        function getAuthToken() {
-            return localStorage.getItem('token') || sessionStorage.getItem('token');
-        }
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
 
-        async function fetchWithAuth(url, options = {}) {
-            const token = getAuthToken();
-            const headers = {
-                'Content-Type': 'application/json',
-                ...options.headers
-            };
-            
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-
-            const response = await fetch(url, {
-                ...options,
-                headers
+                // Si se desea cambiar el color del botón al seleccionar pestaña
+                addBtn.classList.remove('active-btn');
+                addBtn.classList.add('highlighted-btn');
+                setTimeout(() => addBtn.classList.remove('highlighted-btn'), 300);
             });
+        });
 
-            if (!response.ok) {
-                throw new Error(`Error: ${response.status} ${response.statusText}`);
-            }
-
-            return response.json();
-        }
-
-        async function cargarCategorias() {
-            try {
-                categorias = await fetchWithAuth('/api/Productos/Categorias');
-                renderizarTabs();
-                
-                if (categorias.length > 0) {
-                    categoriaSeleccionada = categorias[0];
-                    await cargarProductosPorCategoria(categoriaSeleccionada);
-                }
-            } catch (error) {
-                console.error('Error al cargar categorías:', error);
-                document.getElementById('tabsContainer').innerHTML = '<p>Error al cargar categorías</p>';
-            }
-        }
-
-        function renderizarTabs() {
-            const tabsContainer = document.getElementById('tabsContainer');
-            tabsContainer.innerHTML = '';
-
-            categorias.forEach((categoria, index) => {
-                const tab = document.createElement('div');
-                tab.className = 'tab' + (index === 0 ? ' active' : '');
-                tab.textContent = categoria;
-                tab.dataset.categoria = categoria;
-                tab.addEventListener('click', () => seleccionarCategoria(categoria));
-                tabsContainer.appendChild(tab);
-            });
-        }
-
-        async function seleccionarCategoria(categoria) {
-            categoriaSeleccionada = categoria;
-            document.querySelectorAll('.tab').forEach(tab => {
-                if (tab.dataset.categoria === categoria) {
-                    tab.classList.add('active');
-                } else {
-                    tab.classList.remove('active');
-                }
-            });
-
-            await cargarProductosPorCategoria(categoria);
-        }
-
-        async function cargarProductosPorCategoria(categoria) {
-            try {
-                let productos;
-                try {
-                    productos = await fetchWithAuth(`/api/Productos/PorCategoriaAdmin/${encodeURIComponent(categoria)}`);
-                } catch (error) {
-                    productos = await fetchWithAuth(`/api/Productos/PorCategoria/${encodeURIComponent(categoria)}`);
-                }
-
-                renderizarProductos(productos);
-            } catch (error) {
-                console.error(`Error al cargar productos de la categoría ${categoria}:`, error);
-                document.getElementById('productosGrid').innerHTML = '<p>Error al cargar productos</p>';
-            }
-        }
-
-        function renderizarProductos(productos) {
-            const productosGrid = document.getElementById('productosGrid');
-            
-            if (productos.length === 0) {
-                productosGrid.innerHTML = '<p>No hay productos en esta categoría</p>';
-                return;
-            }
-
-            productosGrid.innerHTML = productos.map(producto => `
-                <div class="producto-card">
-                    <div class="producto-info">
-                        <h4>${producto.nombre}</h4>
-                        <p>${producto.descripcion || 'Sin descripción'}</p>
-                        <p>Categoría: ${producto.categoria}</p>
-                        <p class="precio">$${producto.precio.toFixed(2)}</p>
-                        <p class="tiempo"><i class="fa-regular fa-clock"></i> ${producto.tiempoPreparacion} min</p>
-                    </div>
-                    <img src="/Img/${producto.id}.jpg" alt="${producto.nombre}" onerror="this.src='/Img/default.jpg'">
-                    <div class="acciones">
-                        <button class="btn-editar" onclick="editarProducto(${producto.id})">Editar</button>
-                        <button class="eliminar" onclick="eliminarProducto(${producto.id})">Eliminar</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function editarProducto(id) {
-            window.location.href = `/Admin/EditProducto/${id}`;
-        }
-
-        function eliminarProducto(id) {
-            window.location.href = `/Admin/eliminarProducto/${id}`;
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            cargarCategorias();
-            
-            const addProductBtn = document.querySelector('.add-product-btn');
-            if (addProductBtn) {
-                addProductBtn.addEventListener('click', () => {
-                    window.location.href = '/Admin/aggProductos';
-                });
-            }
+        // Resalta el botón al hacer clic
+        addBtn.addEventListener('click', () => {
+            addBtn.classList.toggle('active-btn');
         });
     </script>
-
-</body>
+}
