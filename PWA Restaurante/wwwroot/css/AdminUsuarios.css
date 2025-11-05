@@ -1,0 +1,200 @@
+﻿body {
+    margin: 0;
+    font-family: "Comic Sans MS", sans-serif;
+    background-color: #f4a460;
+}
+
+/* Encabezado */
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid #b46525;
+    background-color: #f7ca9c;
+    height: 70px;
+}
+
+/* Panel izquierdo */
+.panel-left {
+    display: flex;
+    align-items: center;
+    background-color: #b46525;
+    color: white;
+    padding: 10px 20px;
+    width: 220px;
+}
+
+    .panel-left i {
+        font-size: 30px;
+        margin-right: 10px;
+    }
+
+    .panel-left div {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .panel-left h2 {
+        font-size: 16px;
+        margin: 0;
+    }
+
+    .panel-left p {
+        margin: 0;
+        font-size: 13px;
+        color: #f7e7d1;
+    }
+
+/* Centro de navegación */
+.nav-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 60px;
+    flex: 1;
+}
+
+    .nav-center a {
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #1b47b2;
+    }
+
+        .nav-center a i {
+            color: #b46525;
+            font-size: 22px;
+        }
+
+        .nav-center a:hover,
+        .nav-center a.active {
+            text-decoration: underline;
+        }
+
+/* Panel derecho */
+.panel-right {
+    background-color: #b46525;
+    padding: 10px 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+    .panel-right button {
+        background: none;
+        border: none;
+        color: white;
+        font-weight: bold;
+        font-size: 15px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+        .panel-right button:hover {
+            text-decoration: underline;
+        }
+
+/* Contenido principal */
+.main-content {
+    display: flex;
+    padding: 20px;
+    height: calc(100vh - 70px);
+}
+
+/* Panel lateral izquierdo */
+.sidebar {
+    width: 300px;
+    background-color: #fff5e9;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0px 2px 6px rgba(0,0,0,0.2);
+}
+
+.btn-agregar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #f7931e;
+    color: black;
+    border: none;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%;
+}
+
+    .btn-agregar:hover {
+        background-color: #ffa84d;
+    }
+
+.lista-usuarios {
+    margin-top: 15px;
+}
+
+    .lista-usuarios h3 {
+        background-color: #c2e0ff;
+        padding: 8px 10px;
+        border-radius: 8px;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+.usuario-card {
+    background-color: #f5c997;
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0px 1px 3px rgba(0,0,0,0.2);
+}
+
+    .usuario-card p {
+        margin: 2px 0;
+    }
+
+.acciones {
+    margin-top: 5px;
+    display: flex;
+    gap: 5px;
+}
+
+    .acciones button {
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        padding: 6px;
+    }
+
+    .acciones .editar {
+        background-color: #4CAF50;
+        color: white;
+    }
+
+    .acciones .eliminar {
+        background-color: #e74c3c;
+        color: white;
+    }
+
+/* Imagen central */
+.imagen-central {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+    .imagen-central img {
+        width: 180px;
+        height: 180px;
+        border-radius: 50%;
+    }

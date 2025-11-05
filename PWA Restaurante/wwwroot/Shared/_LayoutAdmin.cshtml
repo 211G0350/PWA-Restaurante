@@ -13,7 +13,9 @@
 
     <!-- Hojas de estilo -->
     <link href="~/css/Shared.css" rel="stylesheet" />
-    <link href="~/css/Admin.css" rel="stylesheet" />
+@*     <link href="~/css/Admin.css" rel="stylesheet" />
+ *@    <link href="~/css/AdminUsuarios.css" rel="stylesheet" />
+
     <link href="~/css/Cocinero.css" rel="stylesheet" />
 </head>
 <body>
@@ -50,40 +52,44 @@
     @RenderSection("Scripts", required: false)
 
     <script>
-        // Resalta el enlace activo en el menú superior
+        // Marca el enlace activo según la ruta actual
         function setActiveLink() {
-            const currentPath = window.location.pathname;
+            const currentPath = window.location.pathname.toLowerCase();
             const links = document.querySelectorAll('.nav-link');
 
             links.forEach(link => {
-                link.classList.remove('active');
-                if (link.getAttribute('href') === currentPath) {
-                    link.classList.add('active');
-                }
+                const href = link.getAttribute('href').toLowerCase();
+                link.classList.toggle('active', href === currentPath);
             });
         }
 
-        // Cerrar sesión: limpia el almacenamiento y redirige al inicio
+        // Cierra sesión y limpia los datos guardados
         function cerrarSesion() {
             localStorage.removeItem('token');
             localStorage.removeItem('usuario');
+            sessionStorage.clear();
             window.location.href = '/';
         }
 
         document.addEventListener('DOMContentLoaded', () => {
             setActiveLink();
 
-            // Mostrar nombre del usuario si está en localStorage
-            const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
-            if (usuario?.nombre) {
-                document.getElementById('nombreUsuario').textContent = usuario.nombre;
+            // Obtiene el nombre del usuario almacenado
+            const usuarioData = localStorage.getItem('usuario') || sessionStorage.getItem('usuario');
+            if (usuarioData) {
+                try {
+                    const usuario = JSON.parse(usuarioData);
+                    if (usuario && usuario.nombre) {
+                        document.getElementById('nombreUsuario').textContent = usuario.nombre;
+                    }
+                } catch (e) {
+                    console.error('Error al parsear usuario:', e);
+                }
             }
 
-            // Agregar evento al botón de salir
+            // Asigna el evento de cerrar sesión
             const btnSalir = document.getElementById('btn-salir');
-            if (btnSalir) {
-                btnSalir.addEventListener('click', cerrarSesion);
-            }
+            if (btnSalir) btnSalir.addEventListener('click', cerrarSesion);
         });
     </script>
 </body>
