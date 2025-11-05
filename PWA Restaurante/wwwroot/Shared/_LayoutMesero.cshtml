@@ -1,8 +1,11 @@
-﻿<!DOCTYPE html>
+﻿@*
+    Layout principal para el Panel del Mesero
+*@
+<!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Panel Mesero</title>
 
     <link rel="stylesheet" href="~/css/mes.css" />
@@ -14,29 +17,38 @@
             <img src="~/img/usuarios.png" alt="Usuario" class="user-logo" />
             <div>
                 <h2>Panel Mesero</h2>
-                <small>Bienvenido, <span id="nombreUsuario">Mesero</span></small>
+                <p>Bienvenido, <span id="nombreUsuario">Mesero</span></p>
             </div>
         </div>
         <div class="header-right">
-            <button class="icon-btn" onclick="sincronizar()"><i class="fa-solid fa-rotate-right"></i></button>
-            <button class="icon-btn" onclick="cerrarSesion()"><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
+            <button class="icon-btn" onclick="sincronizar()">
+                <i class="fa-solid fa-rotate-right"></i>
+            </button>
+            <button class="icon-btn" onclick="cerrarSesion()">
+                <i class="fa-solid fa-right-from-bracket"></i> Salir
+            </button>
         </div>
     </header>
 
     <main class="content">
-        @RenderBody() 
+        @RenderBody()
     </main>
 
+    @RenderSection("Scripts", required: false)
+
     <script>
+        // Cerrar sesión: limpia datos y regresa al inicio
         function cerrarSesion() {
             localStorage.clear();
             window.location.href = "/";
         }
 
+        // Sincronizar: recargar la página
         function sincronizar() {
             location.reload();
         }
 
+        // Mostrar nombre del usuario si está guardado
         document.addEventListener("DOMContentLoaded", () => {
             const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
             if (usuario?.nombre) {

@@ -1,13 +1,20 @@
-﻿<!DOCTYPE html>
+﻿@*
+    Layout principal para el Panel de Administración
+*@
+<!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@(ViewData["Title"] ?? "Panel Admin")</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link href="/css/Shared.css" rel="stylesheet" />
-    <link href="/css/Admin.css" rel="stylesheet" />
-    <link href="/css/Cocinero.css" rel="stylesheet" />
+
+    <!-- Fuentes e iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+    <!-- Hojas de estilo -->
+    <link href="~/css/Shared.css" rel="stylesheet" />
+    <link href="~/css/Admin.css" rel="stylesheet" />
+    <link href="~/css/Cocinero.css" rel="stylesheet" />
 </head>
 <body>
 
@@ -16,17 +23,23 @@
             <i class="fa-solid fa-user"></i>
             <div>
                 <h2>Panel Admin</h2>
-                <p>Bienvenido</p>
+                <p>Bienvenido, <span id="nombreUsuario">Administrador</span></p>
             </div>
         </div>
 
         <div class="nav-center">
-            <a href="/Admin/usuariosadmin" id="link-usuarios" class="nav-link"><i class="fa-solid fa-users"></i> Usuarios</a>
-            <a href="/Admin/adminProducts" id="link-productos" class="nav-link"><i class="fa-solid fa-burger"></i> Productos</a>
+            <a href="/Admin/usuariosadmin" id="link-usuarios" class="nav-link">
+                <i class="fa-solid fa-users"></i> Usuarios
+            </a>
+            <a href="/Admin/adminProducts" id="link-productos" class="nav-link">
+                <i class="fa-solid fa-burger"></i> Productos
+            </a>
         </div>
 
         <div class="panel-right">
-            <button id="btn-salir"><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
+            <button id="btn-salir">
+                <i class="fa-solid fa-right-from-bracket"></i> Salir
+            </button>
         </div>
     </header>
 
@@ -34,11 +47,14 @@
         @RenderBody()
     </main>
 
+    @RenderSection("Scripts", required: false)
+
     <script>
+        // Resalta el enlace activo en el menú superior
         function setActiveLink() {
             const currentPath = window.location.pathname;
             const links = document.querySelectorAll('.nav-link');
-            
+
             links.forEach(link => {
                 link.classList.remove('active');
                 if (link.getAttribute('href') === currentPath) {
@@ -47,15 +63,23 @@
             });
         }
 
+        // Cerrar sesión: limpia el almacenamiento y redirige al inicio
         function cerrarSesion() {
             localStorage.removeItem('token');
             localStorage.removeItem('usuario');
             window.location.href = '/';
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', () => {
             setActiveLink();
-            
+
+            // Mostrar nombre del usuario si está en localStorage
+            const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+            if (usuario?.nombre) {
+                document.getElementById('nombreUsuario').textContent = usuario.nombre;
+            }
+
+            // Agregar evento al botón de salir
             const btnSalir = document.getElementById('btn-salir');
             if (btnSalir) {
                 btnSalir.addEventListener('click', cerrarSesion);
