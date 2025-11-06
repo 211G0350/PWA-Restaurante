@@ -6,6 +6,7 @@ using PWA_Restaurante.Repositories;
 using System.Security.Claims;
 using System.Text;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Cryptography;
 
 namespace PWA_Restaurante.Services
 {
@@ -19,12 +20,33 @@ namespace PWA_Restaurante.Services
 		public IConfiguration Configuration { get; }
 		public Repository<Usuarios> Repository { get; }
 
+		private string HashPassword(string password)
+		{
+			using (SHA256 sha256Hash = SHA256.Create())
+			{
+				byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(password));
+				StringBuilder builder = new StringBuilder();
+				for (int i = 0; i < bytes.Length; i++)
+				{
+					builder.Append(bytes[i].ToString("x2"));
+				}
+				return builder.ToString();
+			}
+		}
+
+
 		public string? GenerarToken(LoginDTO dto)
 		{
 			var usuario = Repository.GetAll()
-				.FirstOrDefault(x => x.Correo == dto.Correo && x.Contrasena == dto.Contrasena);
+				.FirstOrDefault(x => x.Correo == dto.Correo);
 
 			if (usuario == null)
+			{
+				return null;
+			}
+
+			string contrasenaEncriptada = HashPassword(dto.Contrasena);
+			if (usuario.Contrasena != contrasenaEncriptada)
 			{
 				return null;
 			}

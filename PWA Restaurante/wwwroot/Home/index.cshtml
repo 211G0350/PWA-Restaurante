@@ -115,55 +115,75 @@
                 } catch (e) {
                     const text = await response.text();
                     console.error('Error parseando respuesta:', text);
-                    throw new Error(`Error de respuesta: ${text}`);
-                }
-
-                if (!response.ok) {
-                    errorMessage.textContent = data.message || 'Error al iniciar sesión';
+                    errorMessage.textContent = 'Error de conexión con el servidor';
                     errorMessage.style.display = 'block';
                     btnLogin.disabled = false;
                     btnLogin.textContent = 'Iniciar Sesión';
                     return;
                 }
 
-                        if (!data || !data.rol || !data.token) {
-            console.error('Respuesta incompleta:', data);
-            errorMessage.textContent = 'Error: respuesta del servidor incompleta';
-            errorMessage.style.display = 'block';
-            btnLogin.disabled = false;
-            btnLogin.textContent = 'Iniciar Sesión';
-            return;
-        }
+                if (!response.ok) {
+                    // Mensajes de error específicos según el código de respuesta
+                    if (response.status === 401) {
+                        errorMessage.textContent = data.message || 'Correo o contraseña incorrectos';
+                    } else if (response.status === 404) {
+                        errorMessage.textContent = 'No existe un usuario con ese correo';
+                    } else {
+                        errorMessage.textContent = data.message || 'Error al iniciar sesión';
+                    }
+                    errorMessage.style.display = 'block';
+                    btnLogin.disabled = false;
+                    btnLogin.textContent = 'Iniciar Sesión';
+                    return;
+                }
 
-        if (data.rol.toLowerCase() !== rolSeleccionado.toLowerCase()) {
-            errorMessage.textContent = `El usuario no tiene el rol ${rolSeleccionado}`;
-            errorMessage.style.display = 'block';
-            btnLogin.disabled = false;
-            btnLogin.textContent = 'Iniciar Sesión';
-            return;
-        }
+                // Solo continuar si el login fue exitoso
+                // Usar propiedades en minúscula (como las devuelve el servidor con camelCase)
+                // Verificar explícitamente que las propiedades existan
+                const token = data.token;
+                const rol = data.rol;
+                const usuario = data.usuario;
+                const id = data.id;
 
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('usuario', JSON.stringify({
-            id: data.id,
-            nombre: data.usuario,
-            rol: data.rol
-        }));
+                if (!data || token === undefined || token === null || rol === undefined || rol === null) {
+                    console.error('Respuesta incompleta:', data);
+                    console.error('Token:', token, 'Rol:', rol);
+                    errorMessage.textContent = 'Error: respuesta del servidor incompleta';
+                    errorMessage.style.display = 'block';
+                    btnLogin.disabled = false;
+                    btnLogin.textContent = 'Iniciar Sesión';
+                    return;
+                }
 
-        if (data.rol.toLowerCase() === 'admin') {
-            window.location.href = '/Admin/panelAdmin';
-        } else if (data.rol.toLowerCase() === 'mesero') {
-            window.location.href = '/Mesero/panelMesero';
-        } else if (data.rol.toLowerCase() === 'cocinero') {
-            window.location.href = '/Cociner/panelCocina';
-        } else {
-            console.error('Rol no reconocido:', data.rol);
-        }
+                if (rol.toLowerCase() !== rolSeleccionado.toLowerCase()) {
+                    errorMessage.textContent = `El usuario no tiene el rol ${rolSeleccionado}`;
+                    errorMessage.style.display = 'block';
+                    btnLogin.disabled = false;
+                    btnLogin.textContent = 'Iniciar Sesión';
+                    return;
+                }
 
+                // Guardar token y datos del usuario solo si todo es correcto
+                localStorage.setItem('token', token);
+                localStorage.setItem('usuario', JSON.stringify({
+                    id: id,
+                    nombre: usuario,
+                    rol: rol
+                }));
+
+                if (rol.toLowerCase() === 'admin') {
+                    window.location.href = '/Admin/panelAdmin';
+                } else if (rol.toLowerCase() === 'mesero') {
+                    window.location.href = '/Mesero/panelMesero';
+                } else if (rol.toLowerCase() === 'cocinero') {
+                    window.location.href = '/Cociner/panelCocina';
+                } else {
+                    console.error('Rol no reconocido:', rol);
+                }
 
             } catch (error) {
                 console.error('Error:', error);
-                errorMessage.textContent = 'Error de conexión con el servidor';
+                errorMessage.textContent = 'Error de conexión con el servidor. Por favor, verifica tu conexión e intenta nuevamente.';
                 errorMessage.style.display = 'block';
                 btnLogin.disabled = false;
                 btnLogin.textContent = 'Iniciar Sesión';

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PWA_Restaurante.Models.DTOs;
@@ -8,6 +8,8 @@ using PWA_Restaurante.Repositories;
 using PWA_Restaurante.Services;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace PWA_Restaurante.Controllers
 {
@@ -26,6 +28,20 @@ namespace PWA_Restaurante.Controllers
 		public UsuarioValidator Validator { get; }
 		public JwtService Service { get; }
 
+		private string HashPassword(string password)
+		{
+			using (SHA256 sha256Hash = SHA256.Create())
+			{
+				byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(password));
+				StringBuilder builder = new StringBuilder();
+				for (int i = 0; i < bytes.Length; i++)
+				{
+					builder.Append(bytes[i].ToString("x2"));
+				}
+				return builder.ToString();
+			}
+		}
+
 
 		[Authorize(Roles = "Admin")]
 		[HttpPost("Registrar")]
@@ -38,7 +54,7 @@ namespace PWA_Restaurante.Controllers
 					Nombre = dto.Nombre,
 					Rol = dto.Rol,
 					Correo = dto.Correo,
-					Contrasena = dto.Contrasena
+					Contrasena = HashPassword(dto.Contrasena)
 				};
 				Repository.Insert(user);
 				return Ok(new { message = "Usuario registrado exitosamente" });
@@ -53,21 +69,26 @@ namespace PWA_Restaurante.Controllers
 		[HttpPost("Login")]
 		public IActionResult Login(LoginDTO dto)
 		{
+			var usuario = Service.Repository.GetAll()
+						  .FirstOrDefault(x => x.Correo == dto.Correo);
+
+			if (usuario == null)
+			{
+				return NotFound(new { message = "No existe un usuario con ese correo" });
+			}
+
 			var token = Service.GenerarToken(dto);
 			if (token == null)
 			{
-				return Unauthorized("Correo o contraseña incorrectos");
+				return Unauthorized(new { message = "Contraseña incorrecta" });
 			}
-
-			var usuario = Service.Repository.GetAll()
-						  .FirstOrDefault(x => x.Correo == dto.Correo);
 
 			return Ok(new
 			{
 				Token = token,
-				Rol = usuario?.Rol,
-				Usuario = usuario?.Nombre,
-				Id = usuario?.Id
+				Rol = usuario.Rol,
+				Usuario = usuario.Nombre,
+				Id = usuario.Id
 			});
 		}
 
@@ -127,11 +148,10 @@ namespace PWA_Restaurante.Controllers
 				usuarioExistente.Rol = dto.Rol;
 				usuarioExistente.Correo = dto.Correo;
 
-				// actualiz contraseña
-				if (!string.IsNullOrWhiteSpace(dto.Contrasena))
-				{
-					usuarioExistente.Contrasena = dto.Contrasena;
-				}
+			if (!string.IsNullOrWhiteSpace(dto.Contrasena))
+			{
+				usuarioExistente.Contrasena = HashPassword(dto.Contrasena);
+			}
 
 				Repository.Update(usuarioExistente);
 				return Ok(new { message = "Usuario actualizado exitosamente" });
