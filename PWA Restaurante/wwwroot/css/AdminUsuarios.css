@@ -1,113 +1,16 @@
 ﻿body {
-    margin: 0;
-    font-family: "Comic Sans MS", sans-serif;
     background-color: #f4a460;
+    font-family: "Comic Sans MS", sans-serif;
+    margin: 0;
 }
 
-/* Encabezado */
-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 2px solid #b46525;
-    background-color: #f7ca9c;
-    height: 70px;
-}
-
-/* Panel izquierdo */
-.panel-left {
-    display: flex;
-    align-items: center;
-    background-color: #b46525;
-    color: white;
-    padding: 10px 20px;
-    width: 220px;
-}
-
-    .panel-left i {
-        font-size: 30px;
-        margin-right: 10px;
-    }
-
-    .panel-left div {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .panel-left h2 {
-        font-size: 16px;
-        margin: 0;
-    }
-
-    .panel-left p {
-        margin: 0;
-        font-size: 13px;
-        color: #f7e7d1;
-    }
-
-/* Centro de navegación */
-.nav-center {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 60px;
-    flex: 1;
-}
-
-    .nav-center a {
-        text-decoration: none;
-        font-weight: bold;
-        font-size: 18px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: #1b47b2;
-    }
-
-        .nav-center a i {
-            color: #b46525;
-            font-size: 22px;
-        }
-
-        .nav-center a:hover,
-        .nav-center a.active {
-            text-decoration: underline;
-        }
-
-/* Panel derecho */
-.panel-right {
-    background-color: #b46525;
-    padding: 10px 25px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-}
-
-    .panel-right button {
-        background: none;
-        border: none;
-        color: white;
-        font-weight: bold;
-        font-size: 15px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-        .panel-right button:hover {
-            text-decoration: underline;
-        }
-
-/* Contenido principal */
 .main-content {
     display: flex;
     padding: 20px;
     height: calc(100vh - 70px);
 }
 
-/* Panel lateral izquierdo */
+/* === SIDEBAR === */
 .sidebar {
     width: 300px;
     background-color: #fff5e9;
@@ -128,12 +31,14 @@ header {
     font-weight: bold;
     cursor: pointer;
     width: 100%;
+    transition: background-color 0.3s ease;
 }
 
     .btn-agregar:hover {
         background-color: #ffa84d;
     }
 
+/* === LISTA USUARIOS === */
 .lista-usuarios {
     margin-top: 15px;
 }
@@ -185,7 +90,7 @@ header {
         color: white;
     }
 
-/* Imagen central */
+/* === IMAGEN CENTRAL === */
 .imagen-central {
     flex-grow: 1;
     display: flex;
@@ -194,7 +99,89 @@ header {
 }
 
     .imagen-central img {
-        width: 180px;
-        height: 180px;
+        width: 200px;
+        height: 200px;
         border-radius: 50%;
     }
+
+/* === MODALES === */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+    .modal.active {
+        display: flex;
+    }
+
+.modal-content {
+    background-color: #f8d6a0;
+    padding: 25px 30px;
+    border-radius: 12px;
+    box-shadow: 0px 3px 8px rgba(0,0,0,0.4);
+    text-align: center;
+    width: 340px;
+}
+
+    .modal-content h2 {
+        margin-top: 0;
+        color: #333;
+    }
+
+    .modal-content label {
+        font-weight: bold;
+        display: block;
+        margin-top: 8px;
+    }
+
+    .modal-content input,
+    .modal-content select {
+        width: 100%;
+        padding: 8px;
+        margin-top: 6px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+    }
+
+.modal-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.btn-eliminar, .btn-editar {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.btn-cancelar {
+    background-color: #c0392b;
+    color: white;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.btn-eliminar:hover, .btn-editar:hover {
+    background-color: #34ce57;
+}
+
+.btn-cancelar:hover {
+    background-color: #e74c3c;
+}
