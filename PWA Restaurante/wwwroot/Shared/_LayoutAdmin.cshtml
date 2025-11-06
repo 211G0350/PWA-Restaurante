@@ -50,10 +50,8 @@
             @RenderBody()
         </main>
 
-        @RenderSection("Scripts", required: false)
-
         <script>
-            // Marca el enlace activo según la ruta actual
+
             function setActiveLink() {
                 const currentPath = window.location.pathname.toLowerCase();
                 const links = document.querySelectorAll('.nav-link');
@@ -64,7 +62,7 @@
                 });
             }
 
-            // Cierra sesión y limpia los datos guardados
+
             function cerrarSesion() {
                 localStorage.removeItem('token');
                 localStorage.removeItem('usuario');
@@ -75,7 +73,6 @@
             document.addEventListener('DOMContentLoaded', () => {
                 setActiveLink();
 
-                // Obtiene el nombre del usuario almacenado
                 const usuarioData = localStorage.getItem('usuario') || sessionStorage.getItem('usuario');
                 if (usuarioData) {
                     try {
@@ -88,7 +85,6 @@
                     }
                 }
 
-                // Asigna el evento de cerrar sesión
                 const btnSalir = document.getElementById('btn-salir');
                 if (btnSalir) btnSalir.addEventListener('click', cerrarSesion);
             });
