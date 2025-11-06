@@ -1,97 +1,97 @@
-﻿@*
-    Layout principal para el Panel de Administración
-*@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@(ViewData["Title"] ?? "Panel Admin")</title>
+﻿    @*
+        Layout principal para el Panel de Administración
+    *@
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>@(ViewData["Title"] ?? "Panel Admin")</title>
 
-    <!-- Fuentes e iconos -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+        <!-- Fuentes e iconos -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
-    <!-- Hojas de estilo -->
-    <link href="~/css/Shared.css" rel="stylesheet" />
-@*     <link href="~/css/Admin.css" rel="stylesheet" />
- *@    <link href="~/css/AdminUsuarios.css" rel="stylesheet" />
-    <link href="~/css/Admincss/AdminProductos.css" rel="stylesheet" />
+        <!-- Hojas de estilo -->
+        <link href="~/css/Shared.css" rel="stylesheet" />
+    @*     <link href="~/css/Admin.css" rel="stylesheet" />
+     *@    <link href="~/css/AdminUsuarios.css" rel="stylesheet" />
+        <link href="~/css/Admincss/AdminProductos.css" rel="stylesheet" />
 
-    <link href="~/css/Cocinero.css" rel="stylesheet" />
-</head>
-<body>
+        <link href="~/css/Cocinero.css" rel="stylesheet" />
+    </head>
+    <body>
 
-    <header>
-        <div class="panel-left">
-            <i class="fa-solid fa-user"></i>
-            <div>
-                <h2>Panel Admin</h2>
-                <p>Bienvenido, <span id="nombreUsuario">Administrador</span></p>
+        <header>
+            <div class="panel-left">
+                <i class="fa-solid fa-user"></i>
+                <div>
+                    <h2>Panel Admin</h2>
+                    <p>Bienvenido, <span id="nombreUsuario">Administrador</span></p>
+                </div>
             </div>
-        </div>
 
-        <div class="nav-center">
-            <a href="/Admin/usuariosadmin" id="link-usuarios" class="nav-link">
-                <i class="fa-solid fa-users"></i> Usuarios
-            </a>
-            <a href="/Admin/adminProducts" id="link-productos" class="nav-link">
-                <i class="fa-solid fa-burger"></i> Productos
-            </a>
-        </div>
+            <div class="nav-center">
+                <a href="/Admin/usuariosadmin" id="link-usuarios" class="nav-link">
+                    <i class="fa-solid fa-users"></i> Usuarios
+                </a>
+                <a href="/Admin/adminProducts" id="link-productos" class="nav-link">
+                    <i class="fa-solid fa-burger"></i> Productos
+                </a>
+            </div>
 
-        <div class="panel-right">
-            <button id="btn-salir">
-                <i class="fa-solid fa-right-from-bracket"></i> Salir
-            </button>
-        </div>
-    </header>
+            <div class="panel-right">
+                <button id="btn-salir">
+                    <i class="fa-solid fa-right-from-bracket"></i> Salir
+                </button>
+            </div>
+        </header>
 
-    <main>
-        @RenderBody()
-    </main>
+        <main>
+            @RenderBody()
+        </main>
 
-    @RenderSection("Scripts", required: false)
+        @RenderSection("Scripts", required: false)
 
-    <script>
-        // Marca el enlace activo según la ruta actual
-        function setActiveLink() {
-            const currentPath = window.location.pathname.toLowerCase();
-            const links = document.querySelectorAll('.nav-link');
+        <script>
+            // Marca el enlace activo según la ruta actual
+            function setActiveLink() {
+                const currentPath = window.location.pathname.toLowerCase();
+                const links = document.querySelectorAll('.nav-link');
 
-            links.forEach(link => {
-                const href = link.getAttribute('href').toLowerCase();
-                link.classList.toggle('active', href === currentPath);
-            });
-        }
-
-        // Cierra sesión y limpia los datos guardados
-        function cerrarSesion() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('usuario');
-            sessionStorage.clear();
-            window.location.href = '/';
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            setActiveLink();
-
-            // Obtiene el nombre del usuario almacenado
-            const usuarioData = localStorage.getItem('usuario') || sessionStorage.getItem('usuario');
-            if (usuarioData) {
-                try {
-                    const usuario = JSON.parse(usuarioData);
-                    if (usuario && usuario.nombre) {
-                        document.getElementById('nombreUsuario').textContent = usuario.nombre;
-                    }
-                } catch (e) {
-                    console.error('Error al parsear usuario:', e);
-                }
+                links.forEach(link => {
+                    const href = link.getAttribute('href').toLowerCase();
+                    link.classList.toggle('active', href === currentPath);
+                });
             }
 
-            // Asigna el evento de cerrar sesión
-            const btnSalir = document.getElementById('btn-salir');
-            if (btnSalir) btnSalir.addEventListener('click', cerrarSesion);
-        });
-    </script>
-</body>
-</html>
+            // Cierra sesión y limpia los datos guardados
+            function cerrarSesion() {
+                localStorage.removeItem('token');
+                localStorage.removeItem('usuario');
+                sessionStorage.clear();
+                window.location.href = '/';
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                setActiveLink();
+
+                // Obtiene el nombre del usuario almacenado
+                const usuarioData = localStorage.getItem('usuario') || sessionStorage.getItem('usuario');
+                if (usuarioData) {
+                    try {
+                        const usuario = JSON.parse(usuarioData);
+                        if (usuario && usuario.nombre) {
+                            document.getElementById('nombreUsuario').textContent = usuario.nombre;
+                        }
+                    } catch (e) {
+                        console.error('Error al parsear usuario:', e);
+                    }
+                }
+
+                // Asigna el evento de cerrar sesión
+                const btnSalir = document.getElementById('btn-salir');
+                if (btnSalir) btnSalir.addEventListener('click', cerrarSesion);
+            });
+        </script>
+    </body>
+    </html>

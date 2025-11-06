@@ -5,14 +5,14 @@
 
 <main class="main-content">
     <div class="sidebar">
-        <button class="btn-agregar"><i class="fa-solid fa-plus"></i> AGREGAR NUEVO USUARIO</button>
+        <button id="btnAgregar" class="btn-agregar"><i class="fa-solid fa-plus"></i> AGREGAR NUEVO USUARIO</button>
 
         <div class="lista-usuarios">
             <h3><i class="fa-solid fa-user-group"></i> Lista de Usuarios:</h3>
 
             <div class="usuario-card">
                 <p><strong>Nombre:</strong> Leonardo</p>
-                <p><strong>Rol:</strong> Mesero</p>
+                <p><strong>Rol:</strong> Admin</p>
                 <div class="acciones">
                     <button class="editar"><i class="fa-solid fa-pen"></i></button>
                     <button class="eliminar"><i class="fa-solid fa-trash"></i></button>
@@ -30,7 +30,7 @@
 
             <div class="usuario-card">
                 <p><strong>Nombre:</strong> Braulio</p>
-                <p><strong>Rol:</strong> Administrador</p>
+                <p><strong>Rol:</strong> Mesero</p>
                 <div class="acciones">
                     <button class="editar"><i class="fa-solid fa-pen"></i></button>
                     <button class="eliminar"><i class="fa-solid fa-trash"></i></button>
@@ -40,6 +40,102 @@
     </div>
 
     <div class="imagen-central">
-        <img src="~/img/renderindex.png" alt="Logo central" />
+        <img src="/img/renderindex.png" alt="Logo central">
+    </div>
+
+    <!-- MODAL AGREGAR -->
+    <div id="modalAgregar" class="modal">
+        <div class="modal-content">
+            <h2>Agregar Usuario</h2>
+            <label>Nombre:</label>
+            <input type="text" id="nombreNuevo" placeholder="Nombre completo">
+
+            <label>Rol:</label>
+            <select id="rolNuevo">
+                <option>Admin</option>
+                <option>Mesero</option>
+                <option>Cocinero</option>
+            </select>
+
+            <label>Correo:</label>
+            <input type="email" id="correoNuevo" placeholder="correo@dominio.com">
+
+            <label>Contraseña:</label>
+            <input type="password" id="passNuevo" placeholder="********">
+
+            <div class="modal-buttons">
+                <button class="btn-editar">Guardar</button>
+                <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EDITAR -->
+    <div id="modalEditar" class="modal">
+        <div class="modal-content">
+            <h2>Editar Usuario</h2>
+            <label>Nombre:</label>
+            <input type="text" id="nombreEditar" value="Leonardo">
+
+            <label>Rol:</label>
+            <select id="rolEditar">
+                <option>Admin</option>
+                <option>Mesero</option>
+                <option>Cocinero</option>
+            </select>
+
+            <label>Correo:</label>
+            <input type="email" id="correoEditar" value="leo@correo.com">
+
+            <label>Contraseña:</label>
+            <input type="password" id="passEditar" value="******">
+
+            <div class="modal-buttons">
+                <button class="btn-editar">Guardar</button>
+                <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL ELIMINAR -->
+    <div id="modalEliminar" class="modal">
+        <div class="modal-content">
+            <h2>Eliminar Usuario</h2>
+            <p>¿Desea eliminar al siguiente usuario?</p>
+            <p><strong id="usuarioEliminar">Osiel</strong></p>
+            <p>Rol: <span id="rolEliminar">Cocinero</span></p>
+            <div class="modal-buttons">
+                <button class="btn-eliminar">Eliminar</button>
+                <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+            </div>
+        </div>
     </div>
 </main>
+
+@section Scripts {
+    <script>
+        const modalAgregar = document.getElementById('modalAgregar');
+        const modalEditar = document.getElementById('modalEditar');
+        const modalEliminar = document.getElementById('modalEliminar');
+
+        document.getElementById('btnAgregar').addEventListener('click', () => {
+            modalAgregar.classList.add('active');
+        });
+
+        document.querySelectorAll('.editar').forEach(btn => {
+            btn.addEventListener('click', () => {
+                modalEditar.classList.add('active');
+            });
+        });
+
+        document.querySelectorAll('.eliminar').forEach(btn => {
+            btn.addEventListener('click', () => {
+                modalEliminar.classList.add('active');
+            });
+        });
+
+        function cerrarModal() {
+            [modalAgregar, modalEditar, modalEliminar].forEach(m => m.classList.remove('active'));
+        }
+    </script>
+}
