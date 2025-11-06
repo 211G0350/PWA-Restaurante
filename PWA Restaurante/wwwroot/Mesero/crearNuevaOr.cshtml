@@ -1,19 +1,17 @@
 @{
     Layout = "_LayoutMesero";
-    ViewData["Title"] = "Crear Nueva Orden";
+    ViewData["Title"] = "Panel Mesero - Crear Orden";
 }
+
 
 <div class="overlay">
     <div class="modal">
-        <!-- Header -->
         <header class="modal-header">
             <h1>Crear Nueva Orden</h1>
             <button class="close" aria-label="Cerrar" onclick="window.location.href='/Mesero/panelMesero'">✕</button>
         </header>
-
-        <!-- Body -->
         <div class="modal-body">
-            <!-- Left content: lista productos -->
+
             <section class="left">
                 <div class="form-row">
                     <label>Número de Mesa *</label>
@@ -22,7 +20,6 @@
                     <input type="text" placeholder="..." class="notes"/>
                 </div>
 
-                <!-- Tabs -->
                 <nav class="tabs">
                     <button class="tab active">Todos</button>
                     <button class="tab">Bebidas</button>
@@ -30,9 +27,7 @@
                     <button class="tab">Ensaladas</button>
                 </nav>
 
-                <!-- Grid de productos -->
                 <div class="product-grid">
-                    <!-- Tarjeta 1 -->
                     <article class="card">
                         <div class="card-left">
                             <h3 class="card-title">Agua Natural</h3>
@@ -43,7 +38,6 @@
                             <button class="btn add">Agregar</button>
                         </div>
                         <div class="card-right">
-                            <!-- botella SVG -->
                             <svg class="bottle" viewBox="0 0 100 240" xmlns="http://www.w3.org/2000/svg" aria-hidden>
                                 <defs>
                                     <linearGradient id="g1" x1="0" x2="1">
@@ -57,54 +51,9 @@
                         </div>
                     </article>
 
-                    <!-- Tarjeta 2 -->
-                    <article class="card">
-                        <div class="card-left">
-                            <h3 class="card-title">Café Americano</h3>
-                            <p class="card-sub">Café negro tradicional</p>
-                            <p class="card-cat">Categoría: Bebidas</p>
-                            <p class="price">$2.50</p>
-                            <p class="time">⏱ 5 min</p>
-                            <button class="btn add">Agregar</button>
-                        </div>
-                        <div class="card-right">
-                            <div class="image-placeholder coffee">☕</div>
-                        </div>
-                    </article>
-
-                    <!-- Tarjeta 3 -->
-                    <article class="card">
-                        <div class="card-left">
-                            <h3 class="card-title">Cappuccino</h3>
-                            <p class="card-sub">Café con leche espumada</p>
-                            <p class="card-cat">Categoría: Bebidas</p>
-                            <p class="price">$3.00</p>
-                            <p class="time">⏱ 7 min</p>
-                            <button class="btn add">Agregar</button>
-                        </div>
-                        <div class="card-right">
-                            <div class="image-placeholder capp">🥛</div>
-                        </div>
-                    </article>
-
-                    <!-- Tarjeta 4 -->
-                    <article class="card">
-                        <div class="card-left">
-                            <h3 class="card-title">Refresco</h3>
-                            <p class="card-sub">Bebida gaseosa variada</p>
-                            <p class="card-cat">Categoría: Bebidas</p>
-                            <p class="price">$2.00</p>
-                            <p class="time">⏱ 3 min</p>
-                            <button class="btn add">Agregar</button>
-                        </div>
-                        <div class="card-right">
-                            <div class="image-placeholder soda">🥤</div>
-                        </div>
-                    </article>
                 </div>
             </section>
 
-            <!-- Right content: resumen -->
             <aside class="right">
                 <div class="summary-header">
                     <svg class="cart" viewBox="0 0 24 24" aria-hidden>
@@ -114,7 +63,6 @@
                     <h2>Resumen de Orden</h2>
                 </div>
 
-                <!-- Item -->
                 <div class="order-item">
                     <div class="item-left">
                         <p class="item-title">Agua Natural</p>
@@ -148,7 +96,6 @@
 </div>
 
 <script>
-    // Cambiar pestaña activa
     document.querySelectorAll('.tab').forEach(t => {
         t.addEventListener('click', () => {
             document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
@@ -156,7 +103,6 @@
         });
     });
 
-    // Botones añadir: efecto visual
     document.querySelectorAll('.btn.add').forEach(b => {
         b.addEventListener('click', () => {
             b.textContent = 'Agregado';
