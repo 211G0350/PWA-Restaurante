@@ -20,6 +20,7 @@
     <div class="modal-editar">
         <h2>Editar Producto</h2>
         <form id="formEditar" enctype="multipart/form-data">
+            <input type="hidden" id="editProductoId" name="Id" />
             <div class="form-row">
                 <div class="form-group">
                     <label>Nombre:</label>
@@ -34,11 +35,10 @@
             <div class="form-row">
                 <div class="form-group">
                     <label>Categoría:</label>
-                    <select id="editCategoria" name="Categoria">
-                        <option>Comidas</option>
-                        <option>Bebidas</option>
-                        <option>Postres</option>
-                    </select>
+                    <input type="text" id="editCategoriaInput" list="editCategoriasList" placeholder="Seleccione o escriba una categoría" autocomplete="off" />
+                    <input type="hidden" id="editCategoria" name="Categoria" />
+                    <small id="editCategoriaActual" class="categoria-actual"></small>
+                    <datalist id="editCategoriasList"></datalist>
                 </div>
                 <div class="form-group">
                     <label>Tiempo Preparación (mins):</label>
@@ -46,10 +46,16 @@
                 </div>
             </div>
 
-            <div class="nueva-categoria">
-                <i class="fa fa-plus-circle"></i> Agregar a Nueva Categoría:
-                <input type="text" id="editNuevaCategoria" placeholder="Escribe nueva categoría..." />
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Activo:</label>
+                    <select id="editActivo" name="Activo">
+                        <option value="true">Activo</option>
+                        <option value="false">Inactivo</option>
+                    </select>
+                </div>
             </div>
+
 
             <div class="form-group descripcion">
                 <label>Descripción:</label>
@@ -91,17 +97,45 @@
 </div>
 
 <script>
-    // 🔸 Redirección al formulario para agregar producto
-    document.addEventListener('DOMContentLoaded', () => {
-        const btnAgregar = document.getElementById('btn-agregar');
-        if (btnAgregar) {
-            btnAgregar.addEventListener('click', () => {
-                window.location.href = '/Admin/aggProductos';
-            });
-        }
-    });
+    const state = {
+        categorias: [],
+        categoriaActiva: null,
+        productoEditId: null,
+        productoDeleteId: null,
+        categoriaOriginal: ''
+    };
 
-    // ===== FUNCIONES GENERALES =====
+    const ui = {
+        btnAgregar: document.getElementById('btn-agregar'),
+        tabs: document.getElementById('categoriaTabs'),
+        grid: document.querySelector('.productos-grid'),
+        formEditar: document.getElementById('formEditar'),
+        modalEditar: document.getElementById('modalEditar'),
+        modalEliminar: document.getElementById('modalEliminar'),
+        edit: {
+            id: document.getElementById('editProductoId'),
+            nombre: document.getElementById('editNombre'),
+            descripcion: document.getElementById('editDescripcion'),
+            precio: document.getElementById('editPrecio'),
+            tiempo: document.getElementById('editTiempo'),
+            activo: document.getElementById('editActivo'),
+            foto: document.getElementById('editFoto'),
+            preview: document.getElementById('editPreview'),
+            categoriaInput: document.getElementById('editCategoriaInput'),
+            categoriaHidden: document.getElementById('editCategoria'),
+            categoriaActualLabel: document.getElementById('editCategoriaActual'),
+            nuevaCategoria: document.getElementById('editNuevaCategoria')
+        },
+        eliminar: {
+            btnConfirmar: document.querySelector('#modalEliminar .eliminar'),
+            nombre: document.getElementById('deleteNombre'),
+            categoria: document.getElementById('deleteCategoria'),
+            imagen: document.getElementById('deleteImg')
+        }
+    };
+
+    document.addEventListener('DOMContentLoaded', init);
+
     function getAuthToken() {
         return localStorage.getItem('token') || sessionStorage.getItem('token');
     }
@@ -114,111 +148,435 @@
         const contentType = response.headers.get('content-type') || '';
         const isJson = contentType.includes('application/json');
         const body = isJson ? await response.json().catch(() => null) : await response.text().catch(() => '');
-        if (!response.ok) throw new Error(body?.message || `Error ${response.status}`);
+        if (!response.ok) {
+            const message = Array.isArray(body)
+                ? body.join(', ')
+                : (body?.message || (typeof body === 'string' && body.trim()) || `Error ${response.status}`);
+            throw new Error(message);
+        }
         return body;
     }
 
-    function configurarTab(tab, tabsContainer, addBtn) {
-        tab.addEventListener('click', () => {
-            tabsContainer.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            addBtn.classList.add('highlighted-btn');
-            setTimeout(() => addBtn.classList.remove('highlighted-btn'), 300);
-            const categoria = tab.getAttribute('data-tab');
-            cargarProductosPorCategoria(categoria);
+    function escapeHtml(str = '')
+    {
+        return String(str) .replace(/&/g, '&amp;') .replace(/</g, '&lt;') .replace(/>/g, '&gt;') .replace(/"/g, '&quot;') .replace(/'/g, '&#39;');
+    }
+
+    async function init() {
+        prepararBotonAgregar();
+        prepararPreviewEdicion();
+        prepararFormularioEdicion();
+        prepararDatalist();
+        prepararEliminar();
+        await cargarCategorias(true);
+    }
+
+    function prepararBotonAgregar() {
+        if (!ui.btnAgregar) return;
+        ui.btnAgregar.addEventListener('click', () => {
+            window.location.href = '/Admin/aggProductos';
         });
     }
 
-    async function cargarCategorias() {
-        const tabsContainer = document.getElementById('categoriaTabs');
-        tabsContainer.innerHTML = '<div class="tab loading">Cargando...</div>';
-        try {
-            const categorias = await fetchWithAuth('/api/Productos/Categorias');
-            tabsContainer.innerHTML = '';
-            categorias.forEach((categoria, i) => {
-                const tab = document.createElement('div');
-                tab.className = 'tab';
-                tab.dataset.tab = categoria;
-                tab.textContent = categoria;
-                configurarTab(tab, tabsContainer, document.getElementById('btn-agregar'));
-                if (i === 0) tab.classList.add('active');
-                tabsContainer.appendChild(tab);
-            });
-            if (categorias.length) cargarProductosPorCategoria(categorias[0]);
-        } catch {
-            tabsContainer.innerHTML = '<div class="tab error">Error al cargar categorías</div>';
-        }
+    function prepararPreviewEdicion() {
+        if (!ui.edit.foto || !ui.edit.preview) return;
+        ui.edit.foto.addEventListener('change', (event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                ui.edit.preview.src = e.target?.result || '/Img/default.jpg';
+            };
+            reader.readAsDataURL(file);
+        });
     }
 
-    async function cargarProductosPorCategoria(categoria) {
-        try {
-            const productos = await fetchWithAuth(`/api/Productos/PorCategoriaAdmin/${encodeURIComponent(categoria)}`);
-            renderizarProductos(productos);
-        } catch {
-            document.querySelector('.productos-grid').innerHTML = '<p>Error al cargar productos</p>';
-        }
-    }
+    function prepararFormularioEdicion() {
+        if (!ui.formEditar) return;
+        ui.formEditar.addEventListener('submit', async (event) => {
+            event.preventDefault();
 
-    function renderizarProductos(productos) {
-        const productosGrid = document.querySelector('.productos-grid');
-        const cacheBuster = Date.now();
-        if (!productos.length) {
-            productosGrid.innerHTML = '<p>No hay productos</p>';
-            return;
-        }
-        productosGrid.innerHTML = productos.map(p => `
-            <div class="producto-card">
-                <div class="producto-info">
-                    <h4>${p.nombre}</h4>
-                    <p>${p.descripcion}</p>
-                    <p>Categoría: ${p.categoria}</p>
-                    <p class="precio">$${p.precio.toFixed(2)}</p>
-                    <p class="tiempo"><i class="fa-regular fa-clock"></i> ${p.tiempoPreparacion} min</p>
-                </div>
-                <img src="/Img/${p.id}.jpg?v=${cacheBuster}" alt="${p.nombre}" onerror="this.src='/Img/default.jpg'">
-                <div class="acciones">
-                    <button onclick="abrirModalEditar(${p.id}, '${p.nombre}', '${p.descripcion}', '${p.categoria}', ${p.precio}, ${p.tiempoPreparacion}, '/Img/${p.id}.jpg?v=${cacheBuster}')">Editar</button>
-                    <button class="eliminar" onclick="abrirModalEliminar('${p.nombre}', '${p.categoria}', ${p.id})">Eliminar</button>
-                </div>
-            </div>
-        `).join('');
-    }
+            if (!state.productoEditId) {
+                alert('No se ha seleccionado un producto para editar.');
+                return;
+            }
 
-    function abrirModalEditar(id, nombre, descripcion, categoria, precio, tiempo, imagen) {
-        document.getElementById('editNombre').value = nombre;
-        document.getElementById('editDescripcion').value = descripcion;
-        document.getElementById('editCategoria').value = categoria;
-        document.getElementById('editPrecio').value = precio;
-        document.getElementById('editTiempo').value = tiempo;
-        document.getElementById('editPreview').src = imagen;
-        document.getElementById('modalEditar').style.display = 'flex';
-    }
+            const nombre = ui.edit.nombre?.value?.trim();
+            const descripcion = ui.edit.descripcion?.value || '';
+            const categoriaTexto = ui.edit.categoriaInput?.value?.trim();
+            const categoriaNueva = ui.edit.nuevaCategoria?.value?.trim();
+            const categoria = categoriaNueva || categoriaTexto || ui.edit.categoriaHidden?.value?.trim();
+            const precio = ui.edit.precio?.value;
+            const tiempo = ui.edit.tiempo?.value;
+            const activo = ui.edit.activo?.value ?? 'true';
 
-    function abrirModalEliminar(nombre, categoria, id) {
-        document.getElementById('deleteNombre').textContent = nombre;
-        document.getElementById('deleteCategoria').textContent = `Categoría: ${categoria}`;
-        const img = document.getElementById('deleteImg');
-        img.src = `/Img/${id}.jpg?v=${Date.now()}`;
-        img.onerror = () => img.src = '/Img/default.jpg';
-        document.getElementById('modalEliminar').style.display = 'flex';
-    }
+            if (!nombre || !categoria || !precio || !tiempo) {
+                alert('Por favor, complete todos los campos obligatorios.');
+                return;
+            }
 
-    function cerrarModal(id) {
-        document.getElementById(id).style.display = 'none';
-    }
+            const formData = new FormData();
+            formData.append('Id', state.productoEditId.toString());
+            formData.append('Nombre', nombre);
+            formData.append('Categoria', categoria);
+            formData.append('Descripcion', descripcion);
+            formData.append('Precio', precio);
+            formData.append('TiempoPreparacion', tiempo);
+            formData.append('Activo', activo);
+            formData.append('ImagenProducto', '');
 
-    const editFoto = document.getElementById('editFoto');
-    const editPreview = document.getElementById('editPreview');
-    if (editFoto) {
-        editFoto.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (ev) => editPreview.src = ev.target.result;
-                reader.readAsDataURL(file);
+            const archivo = ui.edit.foto?.files?.[0];
+            if (archivo) formData.append('archivo', archivo);
+
+            try {
+                const token = getAuthToken();
+                const headers = {};
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                const response = await fetch(`/api/Productos/Editar/${state.productoEditId}`, {
+                    method: 'PUT',
+                    headers,
+                    body: formData
+                });
+
+                const contentType = response.headers.get('content-type') || '';
+                const isJson = contentType.includes('application/json');
+                const result = isJson ? await response.json().catch(() => null) : await response.text().catch(() => '');
+
+                if (response.ok) {
+                    const mensaje = result && typeof result === 'object' && 'message' in result
+                        ? result.message
+                        : (typeof result === 'string' && result.trim().length > 0 ? result : 'Producto actualizado exitosamente');
+                    alert(mensaje);
+                    cerrarModalInterno(ui.modalEditar);
+                    await cargarCategorias(true, true);
+                } else {
+                    let errorMsg = 'Error al actualizar producto';
+                    if (Array.isArray(result)) {
+                        errorMsg = result.join(', ');
+                    } else if (result && typeof result === 'object') {
+                        if (Array.isArray(result.errors)) {
+                            errorMsg = result.errors.join(', ');
+                        } else if ('message' in result) {
+                            errorMsg = result.message;
+                        }
+                    } else if (typeof result === 'string' && result.trim().length > 0) {
+                        errorMsg = result;
+                    }
+                    alert(errorMsg);
+                }
+            } catch (error) {
+                console.error('Error al actualizar producto:', error);
+                alert(error?.message || 'Error al actualizar producto. Por favor, intente nuevamente.');
             }
         });
     }
 
-    document.addEventListener('DOMContentLoaded', cargarCategorias);
+    function prepararDatalist() {
+        if (!ui.edit.categoriaInput) return;
+
+        ui.edit.categoriaInput.addEventListener('focus', async () => {
+            await cargarCategorias(true, true);
+            poblarDatalist();
+            ui.edit.categoriaInput.select();
+        });
+
+        ui.edit.categoriaInput.addEventListener('input', () => sincronizarCategoriaOculta());
+        ui.edit.categoriaInput.addEventListener('blur', () => sincronizarCategoriaOculta(true));
+    }
+
+    function prepararEliminar() {
+        if (ui.eliminar.btnConfirmar) {
+            ui.eliminar.btnConfirmar.addEventListener('click', eliminarProductoActual);
+        }
+    }
+
+    async function cargarCategorias(force = false, mantenerSeleccion = false) {
+        if (!force && state.categorias.length) return state.categorias;
+
+        const indicador = '<div class="tab loading">Cargando...</div>';
+        if (ui.tabs && !state.categorias.length) ui.tabs.innerHTML = indicador;
+
+        try {
+            const categorias = await fetchWithAuth('/api/Productos/Categorias');
+            state.categorias = Array.isArray(categorias) ? categorias.filter(Boolean) : [];
+            renderTabs();
+
+            const anterior = mantenerSeleccion ? state.categoriaActiva : null;
+            if (anterior && state.categorias.includes(anterior)) {
+                seleccionarTab(anterior);
+            } else if (state.categorias.length) {
+                seleccionarTab(state.categorias[0]);
+            } else {
+                state.categoriaActiva = null;
+                if (ui.grid) ui.grid.innerHTML = '<p>No hay productos</p>';
+            }
+        } catch (error) {
+            console.error('Error al cargar categorías:', error);
+            if (ui.tabs) ui.tabs.innerHTML = '<div class="tab error">Error al cargar categorías</div>';
+        }
+
+        poblarDatalist();
+        return state.categorias;
+    }
+
+    function renderTabs() {
+        if (!ui.tabs) return;
+        ui.tabs.innerHTML = '';
+
+        if (!state.categorias.length) {
+            ui.tabs.innerHTML = '<div class="tab empty">Sin categorías</div>';
+            return;
+        }
+
+        state.categorias.forEach((categoria) => {
+            const tab = document.createElement('div');
+            tab.className = 'tab';
+            tab.dataset.tab = categoria;
+            tab.textContent = categoria;
+            tab.addEventListener('click', () => seleccionarTab(categoria));
+            ui.tabs.appendChild(tab);
+        });
+
+        marcarTabActiva(state.categoriaActiva);
+    }
+
+    async function seleccionarTab(categoria) {
+        if (!categoria) return;
+        state.categoriaActiva = categoria;
+        marcarTabActiva(categoria);
+        try {
+            const productos = await fetchWithAuth(`/api/Productos/PorCategoriaAdmin/${encodeURIComponent(categoria)}`);
+            renderizarProductos(productos);
+        } catch (error) {
+            console.error('Error al cargar productos:', error);
+            if (ui.grid) ui.grid.innerHTML = '<p>Error al cargar productos</p>';
+        }
+    }
+
+    function marcarTabActiva(categoria) {
+        if (!ui.tabs) return;
+        ui.tabs.querySelectorAll('.tab').forEach(tab => {
+            tab.classList.toggle('active', tab.dataset.tab === categoria);
+        });
+    }
+
+    function renderizarProductos(productos = []) {
+        if (!ui.grid) return;
+        const cacheBuster = Date.now();
+
+        if (!productos.length) {
+            ui.grid.innerHTML = '<p>No hay productos</p>';
+            return;
+        }
+
+        ui.grid.innerHTML = productos.map(p => {
+            const nombre = escapeHtml(p.nombre ?? '');
+            const descripcion = escapeHtml(p.descripcion ?? '');
+            const categoria = escapeHtml(p.categoria ?? '');
+            const tiempo = typeof p.tiempoPreparacion === 'number' ? p.tiempoPreparacion : '';
+            const precio = typeof p.precio === 'number' ? p.precio.toFixed(2) : '0.00';
+            const activo = p.activo === false ? 'Inactivo' : 'Activo';
+            return `
+            <div class="producto-card" data-id="${p.id}">
+                <div class="producto-info">
+                    <h4>${nombre}</h4>
+                    <p>${descripcion}</p>
+                    <p>Categoría: ${categoria}</p>
+                    <p class="precio">$${precio}</p>
+                    <p class="tiempo"><i class="fa-regular fa-clock"></i> ${tiempo} min</p>
+                    <p class="estado">Estado: ${activo}</p>
+                </div>
+                <img src="/Img/${p.id}.jpg?v=${cacheBuster}" alt="${nombre}" onerror="this.src='/Img/default.jpg'">
+                <div class="acciones">
+                    <button class="btn-editar"
+                        data-id="${p.id}"
+                        data-nombre="${encodeURIComponent(p.nombre ?? '')}"
+                        data-descripcion="${encodeURIComponent(p.descripcion ?? '')}"
+                        data-categoria="${encodeURIComponent(p.categoria ?? '')}"
+                        data-precio="${p.precio ?? ''}"
+                        data-tiempo="${p.tiempoPreparacion ?? ''}"
+                        data-activo="${p.activo === false ? 'false' : 'true'}">
+                        Editar
+                    </button>
+                    <button class="eliminar btn-open-delete"
+                        data-id="${p.id}"
+                        data-nombre="${encodeURIComponent(p.nombre ?? '')}"
+                        data-categoria="${encodeURIComponent(p.categoria ?? '')}">
+                        Eliminar
+                    </button>
+                </div>
+            </div>`;
+        }).join('');
+
+        ui.grid.querySelectorAll('.btn-editar').forEach(btn => {
+            btn.addEventListener('click', () => abrirModalEditar(btn.dataset));
+        });
+
+        ui.grid.querySelectorAll('.btn-open-delete').forEach(btn => {
+            btn.addEventListener('click', () => abrirModalEliminar(btn.dataset));
+        });
+    }
+
+    function abrirModalEditar(dataset = {}) {
+        const id = Number(dataset.id);
+        if (!id) {
+            alert('No se pudo identificar el producto a editar.');
+            return;
+        }
+
+        state.productoEditId = id;
+        const nombre = decodeURIComponent(dataset.nombre || '');
+        const descripcion = decodeURIComponent(dataset.descripcion || '');
+        const categoria = decodeURIComponent(dataset.categoria || '');
+        const precio = dataset.precio || '';
+        const tiempo = dataset.tiempo || '';
+        const activo = dataset.activo === 'false' ? 'false' : 'true';
+
+        if (ui.edit.id) ui.edit.id.value = id;
+        if (ui.edit.nombre) ui.edit.nombre.value = nombre;
+        if (ui.edit.descripcion) ui.edit.descripcion.value = descripcion;
+        if (ui.edit.precio) ui.edit.precio.value = precio;
+        if (ui.edit.tiempo) ui.edit.tiempo.value = tiempo;
+        if (ui.edit.activo) ui.edit.activo.value = activo;
+        if (ui.edit.preview) ui.edit.preview.src = `/Img/${id}.jpg?v=${Date.now()}`;
+        if (ui.edit.nuevaCategoria) ui.edit.nuevaCategoria.value = '';
+        if (ui.edit.foto) ui.edit.foto.value = '';
+
+        state.categoriaOriginal = categoria;
+        if (ui.edit.categoriaHidden) ui.edit.categoriaHidden.value = categoria;
+        if (ui.edit.categoriaInput) {
+            ui.edit.categoriaInput.value = '';
+            ui.edit.categoriaInput.placeholder = categoria ? `Categoría actual: ${categoria}` : 'Seleccione o escriba una categoría';
+        }
+        if (ui.edit.categoriaActualLabel) {
+            ui.edit.categoriaActualLabel.textContent = categoria ? `Actual: ${categoria}` : '';
+        }
+
+        poblarDatalist();
+        mostrarModal(ui.modalEditar);
+    }
+
+    function abrirModalEliminar(dataset = {}) {
+        const id = Number(dataset.id);
+        if (!id) {
+            alert('No se pudo identificar el producto a eliminar.');
+            return;
+        }
+
+        state.productoDeleteId = id;
+        const nombre = decodeURIComponent(dataset.nombre || '');
+        const categoria = decodeURIComponent(dataset.categoria || '');
+
+        if (ui.eliminar.nombre) ui.eliminar.nombre.textContent = nombre;
+        if (ui.eliminar.categoria) ui.eliminar.categoria.textContent = categoria ? `Categoría: ${categoria}` : '';
+        if (ui.eliminar.imagen) {
+            ui.eliminar.imagen.src = `/Img/${id}.jpg?v=${Date.now()}`;
+            ui.eliminar.imagen.onerror = () => { ui.eliminar.imagen.src = '/Img/default.jpg'; };
+        }
+
+        mostrarModal(ui.modalEliminar);
+    }
+
+    function poblarDatalist() {
+        const datalist = document.getElementById('editCategoriasList');
+        if (!datalist) return;
+
+        datalist.innerHTML = '';
+        const opciones = state.categorias.filter(Boolean).sort((a, b) => a.localeCompare(b));
+        opciones.forEach(categoria => {
+            const option = document.createElement('option');
+            option.value = categoria;
+            datalist.appendChild(option);
+        });
+    }
+
+    function sincronizarCategoriaOculta(restaurar = false) {
+        if (!ui.edit.categoriaHidden) return;
+        const valor = ui.edit.categoriaInput?.value?.trim();
+
+        if (valor) {
+            ui.edit.categoriaHidden.value = valor;
+        } else if (restaurar) {
+            ui.edit.categoriaHidden.value = state.categoriaOriginal || '';
+        }
+    }
+
+    function cerrarModalInterno(modal) {
+        if (!modal) return;
+        modal.style.display = 'none';
+
+        if (modal === ui.modalEditar) {
+            state.productoEditId = null;
+            state.categoriaOriginal = '';
+            if (ui.edit.categoriaHidden) ui.edit.categoriaHidden.value = '';
+            if (ui.edit.categoriaInput) ui.edit.categoriaInput.value = '';
+            if (ui.edit.nuevaCategoria) ui.edit.nuevaCategoria.value = '';
+            if (ui.edit.foto) ui.edit.foto.value = '';
+        }
+
+        if (modal === ui.modalEliminar) {
+            state.productoDeleteId = null;
+        }
+    }
+
+    function mostrarModal(modal) {
+        if (!modal) return;
+        modal.style.display = 'flex';
+    }
+
+    async function eliminarProductoActual() {
+        if (!state.productoDeleteId) {
+            alert('No se ha seleccionado un producto para eliminar.');
+            return;
+        }
+
+        try {
+            const token = getAuthToken();
+            const headers = {};
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const response = await fetch(`/api/Productos/EliminarProducto/${state.productoDeleteId}`, {
+                method: 'DELETE',
+                headers
+            });
+
+            const contentType = response.headers.get('content-type') || '';
+            const isJson = contentType.includes('application/json');
+            const result = isJson ? await response.json().catch(() => null) : await response.text().catch(() => '');
+
+            if (response.ok) {
+                const mensaje = result && typeof result === 'object' && 'message' in result
+                    ? result.message
+                    : (typeof result === 'string' && result.trim().length > 0 ? result : 'Producto eliminado exitosamente');
+                alert(mensaje);
+                cerrarModalInterno(ui.modalEliminar);
+                state.productoDeleteId = null;
+                await cargarCategorias(true, true);
+            } else {
+                let errorMsg = 'Error al eliminar producto';
+                if (Array.isArray(result)) {
+                    errorMsg = result.join(', ');
+                } else if (result && typeof result === 'object') {
+                    if (Array.isArray(result.errors)) {
+                        errorMsg = result.errors.join(', ');
+                    } else if ('message' in result) {
+                        errorMsg = result.message;
+                    }
+                } else if (typeof result === 'string' && result.trim().length > 0) {
+                    errorMsg = result;
+                }
+                alert(errorMsg);
+            }
+        } catch (error) {
+            console.error('Error al eliminar producto:', error);
+            alert(error?.message || 'Error al eliminar producto. Por favor, intente nuevamente.');
+        }
+    }
+
+    window.cerrarModal = (id) => {
+        if (id === 'modalEditar') cerrarModalInterno(ui.modalEditar);
+        if (id === 'modalEliminar') cerrarModalInterno(ui.modalEliminar);
+    };
 </script>
+
