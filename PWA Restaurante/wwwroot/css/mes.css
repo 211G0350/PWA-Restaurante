@@ -16,7 +16,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: #d97a2b;
+    background-color: #b46525;
     color: white;
     padding: 12px 25px;
     border-bottom: 4px solid #a85a17;
@@ -273,7 +273,7 @@ body {
     border-radius: 20px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
     width: 90%;
-    max-width: 1200px;
+    max-width: 810px;
     max-height: 90%;
     overflow-y: auto;
     display: flex;
@@ -295,7 +295,7 @@ body {
 
 /* === Encabezado del modal === */
 .modal-header.warm {
-    background: linear-gradient(90deg, #e95a21, #f9b179);
+    background: #d97a2b;
     color: #fff;
     display: flex;
     justify-content: space-between;
