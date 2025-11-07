@@ -8,11 +8,7 @@
 </div>
 
 <!-- TABS -->
-<div class="tabs">
-    <div class="tab active" data-tab="bebidas">Bebidas</div>
-    <div class="tab" data-tab="comidas">Comidas</div>
-    <div class="tab" data-tab="ensaladas">Ensaladas</div>
-</div>
+<div class="tabs" id="categoriaTabs"></div>
 
 <!-- PRODUCTOS -->
 <div class="productos-grid">
@@ -39,16 +35,90 @@
             headers
         });
 
+        const contentType = response.headers.get('content-type') || '';
+        const isJson = contentType.includes('application/json');
+        const responseBody = isJson
+            ? await response.json().catch(() => null)
+            : await response.text().catch(() => '');
+
         if (!response.ok) {
             if (response.status === 401) {
                 alert('Sesión expirada. Por favor, inicia sesión nuevamente.');
                 window.location.href = '/';
                 return null;
             }
-            throw new Error(`Error: ${response.status} ${response.statusText}`);
+
+            let errorMessage = `Error ${response.status}`;
+
+            if (Array.isArray(responseBody)) {
+                errorMessage = responseBody.join(' ');
+            } else if (responseBody && typeof responseBody === 'object' && 'message' in responseBody) {
+                errorMessage = responseBody.message;
+            } else if (typeof responseBody === 'string' && responseBody.trim().length > 0) {
+                errorMessage = responseBody;
+            }
+
+            throw new Error(errorMessage);
         }
 
-        return response.json();
+        return responseBody;
+    }
+
+    function configurarTab(tab, tabsContainer, addBtn) {
+        tab.addEventListener('click', () => {
+            tabsContainer.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+
+            addBtn.classList.remove('active-btn');
+            addBtn.classList.add('highlighted-btn');
+            setTimeout(() => addBtn.classList.remove('highlighted-btn'), 300);
+
+            const categoria = tab.getAttribute('data-tab');
+            cargarProductosPorCategoria(categoria);
+        });
+    }
+
+    async function cargarCategorias() {
+        const tabsContainer = document.getElementById('categoriaTabs');
+        const addBtn = document.getElementById('btn-agregar');
+
+        tabsContainer.innerHTML = '<div class="tab loading">Cargando categorías...</div>';
+
+        try {
+            const categorias = await fetchWithAuth('/api/Productos/Categorias');
+
+            if (!categorias || categorias.length === 0) {
+                tabsContainer.innerHTML = '<div class="tab empty">No hay categorías disponibles</div>';
+                document.querySelector('.productos-grid').innerHTML = '<p>No hay productos disponibles</p>';
+                return;
+            }
+
+            tabsContainer.innerHTML = '';
+
+            categorias.forEach((categoria, index) => {
+                const tab = document.createElement('div');
+                tab.className = 'tab';
+                tab.dataset.tab = categoria;
+                tab.textContent = categoria;
+
+                configurarTab(tab, tabsContainer, addBtn);
+
+                if (index === 0) {
+                    tab.classList.add('active');
+                }
+
+                tabsContainer.appendChild(tab);
+            });
+
+            const primerTab = tabsContainer.querySelector('.tab');
+            if (primerTab) {
+                cargarProductosPorCategoria(primerTab.getAttribute('data-tab'));
+            }
+        } catch (error) {
+            console.error('Error al cargar categorías:', error);
+            tabsContainer.innerHTML = '<div class="tab error">Error al cargar categorías</div>';
+            document.querySelector('.productos-grid').innerHTML = '<p>Error al cargar categorías</p>';
+        }
     }
 
     async function cargarProductosPorCategoria(categoria) {
@@ -75,6 +145,7 @@
 
     function renderizarProductos(productos) {
         const productosGrid = document.querySelector('.productos-grid');
+        const cacheBuster = Date.now();
 
         if (!productos || productos.length === 0) {
             productosGrid.innerHTML = '<p>No hay productos en esta categoría</p>';
@@ -98,7 +169,7 @@
                         <p class="precio">$${precio.toFixed(2)}</p>
                         <p class="tiempo"><i class="fa-regular fa-clock"></i> ${tiempoPreparacion} min</p>
                     </div>
-                    <img src="/Img/${id}.jpg" alt="${nombre}" onerror="this.src='/Img/default.jpg'">
+                    <img src="/Img/${id}.jpg?v=${cacheBuster}" alt="${nombre}" onerror="this.src='/Img/default.jpg'">
                     <div class="acciones">
                         <button onclick="editarProducto(${id})">Editar</button>
                         <button class="eliminar" onclick="eliminarProducto(${id})">Eliminar</button>
@@ -116,39 +187,12 @@
         window.location.href = `/Admin/eliminarProducto/${id}`;
     }
 
-    // Manejo de tabs
-    const tabs = document.querySelectorAll('.tab');
     const addBtn = document.getElementById('btn-agregar');
-
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            // Remover active de todos los tabs
-            tabs.forEach(t => t.classList.remove('active'));
-            // Agregar active al tab clickeado
-            tab.classList.add('active');
-
-            // Efecto visual en el botón agregar
-            addBtn.classList.remove('active-btn');
-            addBtn.classList.add('highlighted-btn');
-            setTimeout(() => addBtn.classList.remove('highlighted-btn'), 300);
-
-            // Cargar productos de la categoría seleccionada
-            const categoria = tab.getAttribute('data-tab');
-            cargarProductosPorCategoria(categoria);
-        });
-    });
 
     addBtn.addEventListener('click', () => {
         addBtn.classList.toggle('active-btn');
         window.location.href = '/Admin/aggProductos';
     });
 
-    // Cargar productos de la categoría activa al iniciar
-    document.addEventListener('DOMContentLoaded', () => {
-        const tabActivo = document.querySelector('.tab.active');
-        if (tabActivo) {
-            const categoria = tabActivo.getAttribute('data-tab');
-            cargarProductosPorCategoria(categoria);
-        }
-    });
+    document.addEventListener('DOMContentLoaded', cargarCategorias);
 </script>

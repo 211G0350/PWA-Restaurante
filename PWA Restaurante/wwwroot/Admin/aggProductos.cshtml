@@ -38,7 +38,11 @@
 
             <div class="form-group">
                 <label for="imagen">Imagen del Producto:</label>
-                <input type="file" id="imagen" accept="image/*">
+                <div class="upload-container">
+                    <img id="imagenPreview" src="/Img/default.jpg" alt="Producto" onerror="this.src='/Img/default.jpg'">
+                    <input type="file" id="imagen" accept="image/jpeg,.jpg" style="display: none;">
+                    <button type="button" class="upload-btn" onclick="document.getElementById('imagen').click()">Upload a File</button>
+                </div>
             </div>
 
             <div class="btn-container">
@@ -49,7 +53,7 @@
     </div>
 </main>
 
-@section Scripts {
+
     <script>
         function getAuthToken() {
             return localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -80,6 +84,19 @@
         function cancelar() {
             window.location.href = '/Admin/adminProducts';
         }
+
+        document.getElementById('imagen').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    document.getElementById('imagenPreview').src = evt.target?.result || '/Img/default.jpg';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                document.getElementById('imagenPreview').src = '/Img/default.jpg';
+            }
+        });
 
         document.getElementById('formAgregarProducto').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -125,4 +142,4 @@
 
         document.addEventListener('DOMContentLoaded', cargarCategorias);
     </script>
-}
+

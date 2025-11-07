@@ -121,16 +121,37 @@
             headers
         });
 
+        const contentType = response.headers.get('content-type') || '';
+        const isJson = contentType.includes('application/json');
+        let responseBody = null;
+
+        if (isJson) {
+            responseBody = await response.json().catch(() => null);
+        } else {
+            responseBody = await response.text().catch(() => '');
+        }
+
         if (!response.ok) {
             if (response.status === 401) {
                 alert('Sesión expirada. Por favor, inicia sesión nuevamente.');
                 window.location.href = '/';
                 return null;
             }
-            throw new Error(`Error: ${response.status} ${response.statusText}`);
+
+            let errorMessage = `Error ${response.status}`;
+
+            if (Array.isArray(responseBody)) {
+                errorMessage = responseBody.join(' ');
+            } else if (responseBody && typeof responseBody === 'object' && 'message' in responseBody) {
+                errorMessage = responseBody.message;
+            } else if (typeof responseBody === 'string' && responseBody.trim().length > 0) {
+                errorMessage = responseBody;
+            }
+
+            throw new Error(errorMessage);
         }
 
-        return response.json();
+        return responseBody;
     }
 
     function cerrarModal() {
@@ -399,20 +420,34 @@
                 body: JSON.stringify(datos)
             });
 
-            const result = await response.json();
+            const contentType = response.headers.get('content-type') || '';
+            const isJson = contentType.includes('application/json');
+            const result = isJson
+                ? await response.json().catch(() => null)
+                : await response.text().catch(() => '');
 
             if (response.ok) {
-                alert(result.message || 'Usuario actualizado exitosamente');
+                const mensajeExito = result && typeof result === 'object' && 'message' in result
+                    ? result.message
+                    : (typeof result === 'string' && result.trim().length > 0 ? result : 'Usuario actualizado exitosamente');
+                alert(mensajeExito);
                 cerrarModal();
                 cargarUsuarios();
             } else {
-                const errorMsg = Array.isArray(result) ? result.join(', ') : (result.message || 'Error al actualizar usuario');
+                let errorMsg = 'Error al actualizar usuario';
+                if (Array.isArray(result)) {
+                    errorMsg = result.join(' ');
+                } else if (result && typeof result === 'object' && 'message' in result) {
+                    errorMsg = result.message;
+                } else if (typeof result === 'string' && result.trim().length > 0) {
+                    errorMsg = result;
+                }
                 mostrarError('errorEditar', errorMsg);
             }
 
         } catch (error) {
             console.error('Error al editar usuario:', error);
-            mostrarError('errorEditar', 'Error al actualizar el usuario');
+            mostrarError('errorEditar', error.message || 'Error al actualizar el usuario');
         } finally {
             btnGuardar.disabled = false;
             btnGuardar.textContent = textoOriginal;

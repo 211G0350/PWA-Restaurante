@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PWA_Restaurante.Models.DTOs;
@@ -251,30 +251,41 @@ namespace PWA_Restaurante.Controllers
 		[Authorize(Roles = "Admin")]
 		public IActionResult EliminarProducto(int id)
 		{
-			if (_validator.ValidateEliminar(id, out List<string> errores))
-			{
-				var producto = _repository.GetByIdWithTracking(id);
-				if (producto == null)
-				{
-					return NotFound("Producto no encontrado");
-				}
-
-				var tienePedidos = _pedidoDetallesRepository.GetAll()
-					.Any(pd => pd.ProductoId == id);
-
-				if (tienePedidos)
-				{
-					return BadRequest(new { message = "No se puede eliminar el producto porque está asociado a uno o más pedidos." });
-				}
-
-				producto.Activo = false;
-				_repository.Update(producto);
-				return Ok(new { message = "Producto desactivado exitosamente" });
-			}
-			else
+			if (!_validator.ValidateEliminar(id, out List<string> errores))
 			{
 				return BadRequest(errores);
 			}
+
+			var producto = _repository.GetByIdWithTracking(id);
+			if (producto == null)
+			{
+				return NotFound("Producto no encontrado");
+			}
+
+			var tienePedidos = _pedidoDetallesRepository.GetAll()
+				.Any(pd => pd.ProductoId == id);
+
+			if (tienePedidos)
+			{
+				return BadRequest(new { message = "No se puede eliminar el producto porque está asociado a uno o más pedidos." });
+			}
+
+			_repository.Delete(producto.Id);
+
+			try
+			{
+				var rutaImagen = Path.Combine(_hostEnvironment.WebRootPath, "Img", $"{producto.Id}.jpg");
+				if (System.IO.File.Exists(rutaImagen))
+				{
+					System.IO.File.Delete(rutaImagen);
+				}
+			}
+			catch
+			{
+
+			}
+
+			return Ok(new { message = "Producto eliminado permanentemente" });
 		}
 
 

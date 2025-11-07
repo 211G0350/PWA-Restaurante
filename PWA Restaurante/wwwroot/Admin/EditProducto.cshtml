@@ -66,6 +66,45 @@
           return localStorage.getItem('token') || sessionStorage.getItem('token');
         }
 
+        async function fetchWithAuth(url, options = {}) {
+          const token = getAuthToken();
+          const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers
+          };
+
+          if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+          }
+
+          const response = await fetch(url, {
+            ...options,
+            headers
+          });
+
+          const contentType = response.headers.get('content-type') || '';
+          const isJson = contentType.includes('application/json');
+          const body = isJson
+            ? await response.json().catch(() => null)
+            : await response.text().catch(() => '');
+
+          if (!response.ok) {
+            let message = `Error ${response.status}`;
+
+            if (Array.isArray(body)) {
+              message = body.join(' ');
+            } else if (body && typeof body === 'object' && 'message' in body) {
+              message = body.message;
+            } else if (typeof body === 'string' && body.trim().length > 0) {
+              message = body;
+            }
+
+            throw new Error(message);
+          }
+
+          return body;
+        }
+
         function obtenerIdDeUrl() {
           const path = window.location.pathname;
           const parts = path.split('/');
@@ -78,29 +117,11 @@
           if (!id) {
             alert('ID de producto no válido');
             window.location.href = '/Admin/adminProducts';
-            return;
+            return null;
           }
 
           try {
-            const token = getAuthToken();
-            const headers = {
-              'Content-Type': 'application/json'
-            };
-            if (token) {
-              headers['Authorization'] = `Bearer ${token}`;
-            }
-
-            const response = await fetch(`/api/Productos/ObtenerPorId/${id}`, { headers });
-            if (!response.ok) {
-              if (response.status === 404) {
-                alert('Producto no encontrado');
-                window.location.href = '/Admin/adminProducts';
-                return;
-              }
-              throw new Error('Error al cargar producto');
-            }
-
-            const producto = await response.json();
+            const producto = await fetchWithAuth(`/api/Productos/ObtenerPorId/${id}`);
 
             document.getElementById('productoId').value = producto.id;
             document.getElementById('nombre').value = producto.nombre;
@@ -109,35 +130,37 @@
             document.getElementById('tiempo').value = producto.tiempoPreparacion;
             document.getElementById('descripcion').value = producto.descripcion || '';
             document.getElementById('activo').value = producto.activo ? 'true' : 'false';
-            document.getElementById('imagenPreview').src = `/Img/${producto.id}.jpg`;
+            document.getElementById('imagenPreview').src = `/Img/${producto.id}.jpg?v=${Date.now()}`;
+
+            return producto;
           } catch (error) {
             console.error('Error al cargar producto:', error);
-            alert('Error al cargar el producto');
+            alert(error.message || 'Error al cargar el producto');
             window.location.href = '/Admin/adminProducts';
+            return null;
           }
         }
 
-        async function cargarCategorias() {
+        async function cargarCategorias(categoriaActual) {
           try {
-            const token = getAuthToken();
-            const headers = {
-              'Content-Type': 'application/json'
-            };
-            if (token) {
-              headers['Authorization'] = `Bearer ${token}`;
-            }
-
-            const response = await fetch('/api/Productos/Categorias', { headers });
-            if (!response.ok) throw new Error('Error al cargar categorías');
-
-            const categorias = await response.json();
+            const categorias = await fetchWithAuth('/api/Productos/Categorias');
             const datalist = document.getElementById('categoriasList');
             datalist.innerHTML = '';
-            categorias.forEach(categoria => {
-              const option = document.createElement('option');
-              option.value = categoria;
-              datalist.appendChild(option);
-            });
+
+            const opciones = Array.isArray(categorias) ? [...categorias] : [];
+            if (categoriaActual && !opciones.includes(categoriaActual)) {
+              opciones.push(categoriaActual);
+            }
+
+            opciones
+              .filter(Boolean)
+              .sort((a, b) => a.localeCompare(b))
+              .forEach(categoria => {
+                const option = document.createElement('option');
+                option.value = categoria;
+                option.textContent = categoria;
+                datalist.appendChild(option);
+              });
           } catch (error) {
             console.error('Error al cargar categorías:', error);
           }
@@ -203,21 +226,30 @@
               body: formData
             });
 
-            const result = await response.json();
+            const contentType = response.headers.get('content-type') || '';
+            const isJson = contentType.includes('application/json');
+            const result = isJson
+              ? await response.json().catch(() => null)
+              : await response.text().catch(() => '');
 
             if (response.ok) {
-              alert(result.message || 'Producto actualizado exitosamente');
-              window.location.href = '/Admin/adminProducts';
+              const mensaje = result && typeof result === 'object' && 'message' in result
+                ? result.message
+                : (typeof result === 'string' && result.trim().length > 0 ? result : 'Producto actualizado exitosamente');
+              alert(mensaje);
+              window.location.href = `/Admin/adminProducts?v=${Date.now()}`;
             } else {
               let errorMsg = 'Error al actualizar producto';
               
               if (Array.isArray(result)) {
                 errorMsg = result.join(', ');
-              } else if (result.errors && Array.isArray(result.errors)) {
-                errorMsg = result.errors.join(', ');
-              } else if (result.message) {
-                errorMsg = result.message;
-              } else if (typeof result === 'string') {
+              } else if (result && typeof result === 'object') {
+                if (Array.isArray(result.errors)) {
+                  errorMsg = result.errors.join(', ');
+                } else if ('message' in result) {
+                  errorMsg = result.message;
+                }
+              } else if (typeof result === 'string' && result.trim().length > 0) {
                 errorMsg = result;
               }
               
@@ -226,13 +258,14 @@
             }
           } catch (error) {
             console.error('Error:', error);
-            alert('Error al actualizar producto. Por favor, intente nuevamente.');
+            alert(error.message || 'Error al actualizar producto. Por favor, intente nuevamente.');
           }
         });
 
-        document.addEventListener('DOMContentLoaded', () => {
-          cargarCategorias();
-          cargarProducto();
+        document.addEventListener('DOMContentLoaded', async () => {
+          const producto = await cargarProducto();
+          const categoriaActual = producto ? (producto.categoria || producto.Categoria) : null;
+          await cargarCategorias(categoriaActual);
         });
     </script>
 
