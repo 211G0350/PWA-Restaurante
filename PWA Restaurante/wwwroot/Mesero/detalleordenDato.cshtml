@@ -3,40 +3,41 @@
     ViewData["Title"] = "Detalles de Orden";
 }
 
-<div class="modal">
-    <div class="modal-header">
-        <h2 id="tituloOrden">Detalles de Orden</h2>
-        <span class="cerrar" onclick="window.location.href='/Mesero/panelMesero'">&times;</span>
-    </div>
+<div class="overlay">
+    <div class="modal">
+        <header class="modal-header warm">
+            <h1 id="tituloOrden">📋 Detalles de Orden</h1>
+            <button class="close" onclick="window.location.href='/Mesero/panelMesero'">✕</button>
+        </header>
 
-    <div class="modal-body">
-        <div id="cargando" style="display: none; text-align: center; padding: 20px;">Cargando detalles...</div>
-        <div id="contenidoPedido" style="display: none;">
-            <div class="info-principal">
-                <div class="columna">
-                    <p><strong>🪑 Mesa</strong><br><span id="numMesa"></span></p>
-                    <p><strong>👨‍🍳 Mesero</strong><br><span id="nombreMesero"></span></p>
+        <div class="modal-body warm-body">
+            <div id="cargando" class="loading warm-loading">Cargando detalles...</div>
+
+            <div id="contenidoPedido" style="display:none;">
+                <div class="info-principal warm-info">
+                    <div class="columna">
+                        <p><strong>🪑 Mesa</strong><br><span id="numMesa"></span></p>
+                        <p><strong>👨‍🍳 Mesero</strong><br><span id="nombreMesero"></span></p>
+                    </div>
+
+                    <div class="columna">
+                        <p><strong>🕒 Hora</strong><br><span id="fechaHora"></span></p>
+                        <p><strong>Estado</strong><br><span class="estado" id="estadoPedido"></span></p>
+                    </div>
+
+                    <div class="notas warm-notas">
+                        <label for="notas">Notas</label><br>
+                        <textarea id="notas" rows="4" readonly></textarea>
+                    </div>
                 </div>
 
-                <div class="columna">
-                    <p><strong>🕒 Hora</strong><br><span id="fechaHora"></span></p>
-                    <p><strong>Estado</strong><br><span class="estado" id="estadoPedido"></span></p>
+                <h3 class="warm-subtitle">Productos</h3>
+                <div id="listaProductos"></div>
+
+                <div class="total-container warm-total">
+                    <span>Total:</span>
+                    <strong id="totalPedido">$0.00</strong>
                 </div>
-
-                <div class="notas">
-                    <label for="notas">Notas</label><br>
-                    <textarea id="notas" rows="4" readonly></textarea>
-                </div>
-            </div>
-
-            <h3>Productos</h3>
-            <div id="listaProductos">
-                <!-- Los productos se cargarán dinámicamente aquí -->
-            </div>
-
-            <div class="total-container">
-                <span>Total:</span>
-                <strong id="totalPedido">$0.00</strong>
             </div>
         </div>
     </div>
@@ -48,95 +49,74 @@
     }
 
     function obtenerIdDeUrl() {
-        const path = window.location.pathname;
-        const parts = path.split('/');
-        const idIndex = parts.indexOf('detalleordenDato') + 1;
-        return idIndex < parts.length ? parseInt(parts[idIndex]) : null;
+        const path = window.location.pathname.split('/');
+        const idx = path.indexOf('detalleordenDato') + 1;
+        return idx < path.length ? parseInt(path[idx]) : null;
     }
 
     function formatearFecha(fecha) {
-        const date = new Date(fecha);
-        return date.toLocaleString('es-ES', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+        const d = new Date(fecha);
+        return d.toLocaleString('es-ES', {
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
         });
     }
 
     async function cargarDetallesPedido() {
         const pedidoId = obtenerIdDeUrl();
-        if (!pedidoId) {
-            alert('ID de pedido no válido');
-            window.location.href = '/Mesero/panelMesero';
-            return;
-        }
+        if (!pedidoId) return alert('ID de pedido no válido');
 
-        document.getElementById('cargando').style.display = 'block';
-        document.getElementById('contenidoPedido').style.display = 'none';
+        const cargando = document.getElementById('cargando');
+        const cont = document.getElementById('contenidoPedido');
+        cargando.style.display = 'block';
+        cont.style.display = 'none';
 
         try {
             const token = getAuthToken();
-            const headers = {
-                'Content-Type': 'application/json'
-            };
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
 
-            const response = await fetch(`/api/Pedidos/VerDetalles/${pedidoId}`, { headers });
-            if (!response.ok) {
-                if (response.status === 404) {
-                    alert('Pedido no encontrado');
-                    window.location.href = '/Mesero/panelMesero';
-                    return;
-                }
-                throw new Error('Error al cargar detalles del pedido');
-            }
+            const resp = await fetch(`/api/Pedidos/VerDetalles/${pedidoId}`, { headers });
+            if (!resp.ok) throw new Error('Error al cargar');
 
-            const pedido = await response.json();
+            const pedido = await resp.json();
 
             document.getElementById('tituloOrden').textContent = `Detalles de Orden #${pedido.Id || pedido.id}`;
-            document.getElementById('numMesa').textContent = pedido.NumMesa || pedido.numMesa || '';
-            document.getElementById('nombreMesero').textContent = pedido.UsuarioNombre || pedido.usuarioNombre || '';
-            document.getElementById('fechaHora').textContent = formatearFecha(pedido.TomadoEn || pedido.tomadoEn);
-            document.getElementById('estadoPedido').textContent = pedido.Estado || pedido.estado || '';
-            document.getElementById('notas').value = pedido.NotasEspeciales || pedido.notasEspeciales || '';
-            document.getElementById('totalPedido').textContent = `$${(pedido.PrecioTotal || pedido.precioTotal).toFixed(2)}`;
+            document.getElementById('numMesa').textContent = pedido.NumMesa || '';
+            document.getElementById('nombreMesero').textContent = pedido.UsuarioNombre || '';
+            document.getElementById('fechaHora').textContent = formatearFecha(pedido.TomadoEn || '');
+            document.getElementById('estadoPedido').textContent = pedido.Estado || '';
+            document.getElementById('notas').value = pedido.NotasEspeciales || '';
+            document.getElementById('totalPedido').textContent = `$${(pedido.PrecioTotal || 0).toFixed(2)}`;
 
-            const listaProductos = document.getElementById('listaProductos');
-            listaProductos.innerHTML = '';
+            const lista = document.getElementById('listaProductos');
+            lista.innerHTML = '';
 
-            if (pedido.Detalles && pedido.Detalles.length > 0) {
-                pedido.Detalles.forEach(detalle => {
-                    const productoDiv = document.createElement('div');
-                    productoDiv.className = 'producto';
-                    productoDiv.innerHTML = `
-                        <div class="detalles">
-                            <p class="nombre">${detalle.NombreProducto || detalle.nombreProducto || ''}</p>
-                            <p class="cantidad">Cantidad: ${detalle.Cantidad || detalle.cantidad || 0}</p>
-                        </div>
-                        <div class="precio">
-                            <p class="total">$${(detalle.Subtotal || detalle.subtotal || 0).toFixed(2)}</p>
-                            <p class="unitario">Precio unitario: $${(detalle.PrecioUnitario || detalle.precioUnitario || 0).toFixed(2)}</p>
-                        </div>
-                    `;
-                    listaProductos.appendChild(productoDiv);
+            if (pedido.Detalles?.length > 0) {
+                pedido.Detalles.forEach(d => {
+                    lista.innerHTML += `
+                        <div class="producto warm-producto">
+                            <div class="detalles">
+                                <p class="nombre">${d.NombreProducto}</p>
+                                <p class="cantidad">Cantidad: ${d.Cantidad}</p>
+                            </div>
+                            <div class="precio">
+                                <p class="total">$${d.Subtotal.toFixed(2)}</p>
+                                <p class="unitario">Unitario: $${d.PrecioUnitario.toFixed(2)}</p>
+                            </div>
+                        </div>`;
                 });
             } else {
-                listaProductos.innerHTML = '<p>No hay productos en este pedido</p>';
+                lista.innerHTML = '<p>No hay productos en este pedido</p>';
             }
 
-            document.getElementById('cargando').style.display = 'none';
-            document.getElementById('contenidoPedido').style.display = 'block';
-        } catch (error) {
-            console.error('Error al cargar detalles del pedido:', error);
-            alert('Error al cargar los detalles del pedido');
-            window.location.href = '/Mesero/panelMesero';
+            cargando.style.display = 'none';
+            cont.style.display = 'block';
+        } catch (err) {
+            console.error(err);
+            alert('Error al cargar los detalles');
         }
     }
 
     document.addEventListener('DOMContentLoaded', cargarDetallesPedido);
 </script>
-

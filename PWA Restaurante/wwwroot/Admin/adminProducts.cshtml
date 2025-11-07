@@ -4,75 +4,126 @@
 }
 
 <div class="add-product-container">
-    <button id="btn-agregar" class="add-product-btn">Agregar Producto <i class="fa-solid fa-plus"></i></button>
+    <button id="btn-agregar" class="add-product-btn">
+        Agregar Producto <i class="fa-solid fa-plus"></i>
+    </button>
 </div>
 
 <!-- TABS -->
 <div class="tabs" id="categoriaTabs"></div>
 
 <!-- PRODUCTOS -->
-<div class="productos-grid">
+<div class="productos-grid"></div>
+
+<!-- ===== MODAL EDITAR ===== -->
+<div id="modalEditar" class="modal-overlay">
+    <div class="modal-editar">
+        <h2>Editar Producto</h2>
+        <form id="formEditar" enctype="multipart/form-data">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Nombre:</label>
+                    <input type="text" id="editNombre" name="Nombre" />
+                </div>
+                <div class="form-group">
+                    <label>Precio:</label>
+                    <input type="number" step="0.01" id="editPrecio" name="Precio" />
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Categoría:</label>
+                    <select id="editCategoria" name="Categoria">
+                        <option>Comidas</option>
+                        <option>Bebidas</option>
+                        <option>Postres</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tiempo Preparación (mins):</label>
+                    <input type="number" id="editTiempo" name="Tiempo" />
+                </div>
+            </div>
+
+            <div class="nueva-categoria">
+                <i class="fa fa-plus-circle"></i> Agregar a Nueva Categoría:
+                <input type="text" id="editNuevaCategoria" placeholder="Escribe nueva categoría..." />
+            </div>
+
+            <div class="form-group descripcion">
+                <label>Descripción:</label>
+                <textarea id="editDescripcion" name="Descripcion"></textarea>
+            </div>
+
+            <div class="form-group imagen">
+                <label>Foto Producto:</label>
+                <div class="preview-container">
+                    <img id="editPreview" src="/img/default.jpg" alt="Producto">
+                </div>
+                <input type="file" id="editFoto" name="Foto" accept="image/*">
+            </div>
+
+            <div class="form-buttons">
+                <button type="submit" class="btn-editar">Editar</button>
+                <button type="button" class="btn-cancelar" onclick="cerrarModal('modalEditar')">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== MODAL ELIMINAR ===== -->
+<div id="modalEliminar" class="modal-overlay">
+    <div class="modal-box">
+        <h2>Eliminar Producto</h2>
+        <div class="preview-container">
+            <img id="deleteImg" src="/Img/default.jpg" alt="Vista previa del producto">
+        </div>
+        <p>¿Desea eliminar el siguiente producto?</p>
+        <p><strong id="deleteNombre"></strong></p>
+        <p id="deleteCategoria"></p>
+
+        <div class="modal-buttons">
+            <button class="eliminar"><i class="fa-solid fa-check"></i> Eliminar</button>
+            <button class="btn-cancelar" onclick="cerrarModal('modalEliminar')"><i class="fa-solid fa-xmark"></i> Cancelar</button>
+        </div>
+    </div>
 </div>
 
 <script>
+    // 🔸 Redirección al formulario para agregar producto
+    document.addEventListener('DOMContentLoaded', () => {
+        const btnAgregar = document.getElementById('btn-agregar');
+        if (btnAgregar) {
+            btnAgregar.addEventListener('click', () => {
+                window.location.href = '/Admin/aggProductos';
+            });
+        }
+    });
+
+    // ===== FUNCIONES GENERALES =====
     function getAuthToken() {
         return localStorage.getItem('token') || sessionStorage.getItem('token');
     }
 
     async function fetchWithAuth(url, options = {}) {
         const token = getAuthToken();
-        const headers = {
-            'Content-Type': 'application/json',
-            ...options.headers
-        };
-
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        const response = await fetch(url, {
-            ...options,
-            headers
-        });
-
+        const headers = { 'Content-Type': 'application/json', ...options.headers };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const response = await fetch(url, { ...options, headers });
         const contentType = response.headers.get('content-type') || '';
         const isJson = contentType.includes('application/json');
-        const responseBody = isJson
-            ? await response.json().catch(() => null)
-            : await response.text().catch(() => '');
-
-        if (!response.ok) {
-            if (response.status === 401) {
-                alert('Sesión expirada. Por favor, inicia sesión nuevamente.');
-                window.location.href = '/';
-                return null;
-            }
-
-            let errorMessage = `Error ${response.status}`;
-
-            if (Array.isArray(responseBody)) {
-                errorMessage = responseBody.join(' ');
-            } else if (responseBody && typeof responseBody === 'object' && 'message' in responseBody) {
-                errorMessage = responseBody.message;
-            } else if (typeof responseBody === 'string' && responseBody.trim().length > 0) {
-                errorMessage = responseBody;
-            }
-
-            throw new Error(errorMessage);
-        }
-
-        return responseBody;
+        const body = isJson ? await response.json().catch(() => null) : await response.text().catch(() => '');
+        if (!response.ok) throw new Error(body?.message || `Error ${response.status}`);
+        return body;
     }
 
     function configurarTab(tab, tabsContainer, addBtn) {
         tab.addEventListener('click', () => {
             tabsContainer.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
-
-            addBtn.classList.remove('active-btn');
             addBtn.classList.add('highlighted-btn');
             setTimeout(() => addBtn.classList.remove('highlighted-btn'), 300);
-
             const categoria = tab.getAttribute('data-tab');
             cargarProductosPorCategoria(categoria);
         });
@@ -80,119 +131,94 @@
 
     async function cargarCategorias() {
         const tabsContainer = document.getElementById('categoriaTabs');
-        const addBtn = document.getElementById('btn-agregar');
-
-        tabsContainer.innerHTML = '<div class="tab loading">Cargando categorías...</div>';
-
+        tabsContainer.innerHTML = '<div class="tab loading">Cargando...</div>';
         try {
             const categorias = await fetchWithAuth('/api/Productos/Categorias');
-
-            if (!categorias || categorias.length === 0) {
-                tabsContainer.innerHTML = '<div class="tab empty">No hay categorías disponibles</div>';
-                document.querySelector('.productos-grid').innerHTML = '<p>No hay productos disponibles</p>';
-                return;
-            }
-
             tabsContainer.innerHTML = '';
-
-            categorias.forEach((categoria, index) => {
+            categorias.forEach((categoria, i) => {
                 const tab = document.createElement('div');
                 tab.className = 'tab';
                 tab.dataset.tab = categoria;
                 tab.textContent = categoria;
-
-                configurarTab(tab, tabsContainer, addBtn);
-
-                if (index === 0) {
-                    tab.classList.add('active');
-                }
-
+                configurarTab(tab, tabsContainer, document.getElementById('btn-agregar'));
+                if (i === 0) tab.classList.add('active');
                 tabsContainer.appendChild(tab);
             });
-
-            const primerTab = tabsContainer.querySelector('.tab');
-            if (primerTab) {
-                cargarProductosPorCategoria(primerTab.getAttribute('data-tab'));
-            }
-        } catch (error) {
-            console.error('Error al cargar categorías:', error);
+            if (categorias.length) cargarProductosPorCategoria(categorias[0]);
+        } catch {
             tabsContainer.innerHTML = '<div class="tab error">Error al cargar categorías</div>';
-            document.querySelector('.productos-grid').innerHTML = '<p>Error al cargar categorías</p>';
         }
     }
 
     async function cargarProductosPorCategoria(categoria) {
         try {
-            const productosGrid = document.querySelector('.productos-grid');
-            productosGrid.innerHTML = '<p>Cargando productos...</p>';
-
-            let productos;
-            try {
-                productos = await fetchWithAuth(`/api/Productos/PorCategoriaAdmin/${encodeURIComponent(categoria)}`);
-            } catch (error) {
-                productos = await fetchWithAuth(`/api/Productos/PorCategoria/${encodeURIComponent(categoria)}`);
-            }
-
-            if (!productos) return;
-
+            const productos = await fetchWithAuth(`/api/Productos/PorCategoriaAdmin/${encodeURIComponent(categoria)}`);
             renderizarProductos(productos);
-        } catch (error) {
-            console.error(`Error al cargar productos de la categoría ${categoria}:`, error);
-            const productosGrid = document.querySelector('.productos-grid');
-            productosGrid.innerHTML = '<p>Error al cargar productos</p>';
+        } catch {
+            document.querySelector('.productos-grid').innerHTML = '<p>Error al cargar productos</p>';
         }
     }
 
     function renderizarProductos(productos) {
         const productosGrid = document.querySelector('.productos-grid');
         const cacheBuster = Date.now();
-
-        if (!productos || productos.length === 0) {
-            productosGrid.innerHTML = '<p>No hay productos en esta categoría</p>';
+        if (!productos.length) {
+            productosGrid.innerHTML = '<p>No hay productos</p>';
             return;
         }
-
-        productosGrid.innerHTML = productos.map(producto => {
-            const nombre = producto.Nombre || producto.nombre || 'Sin nombre';
-            const descripcion = producto.Descripcion || producto.descripcion || 'Sin descripción';
-            const categoria = producto.Categoria || producto.categoria || '';
-            const precio = producto.Precio || producto.precio || 0;
-            const tiempoPreparacion = producto.TiempoPreparacion || producto.tiempoPreparacion || 0;
-            const id = producto.Id || producto.id || 0;
-
-            return `
-                <div class="producto-card">
-                    <div class="producto-info">
-                        <h4>${nombre}</h4>
-                        <p>${descripcion}</p>
-                        <p>Categoría: ${categoria}</p>
-                        <p class="precio">$${precio.toFixed(2)}</p>
-                        <p class="tiempo"><i class="fa-regular fa-clock"></i> ${tiempoPreparacion} min</p>
-                    </div>
-                    <img src="/Img/${id}.jpg?v=${cacheBuster}" alt="${nombre}" onerror="this.src='/Img/default.jpg'">
-                    <div class="acciones">
-                        <button onclick="editarProducto(${id})">Editar</button>
-                        <button class="eliminar" onclick="eliminarProducto(${id})">Eliminar</button>
-                    </div>
+        productosGrid.innerHTML = productos.map(p => `
+            <div class="producto-card">
+                <div class="producto-info">
+                    <h4>${p.nombre}</h4>
+                    <p>${p.descripcion}</p>
+                    <p>Categoría: ${p.categoria}</p>
+                    <p class="precio">$${p.precio.toFixed(2)}</p>
+                    <p class="tiempo"><i class="fa-regular fa-clock"></i> ${p.tiempoPreparacion} min</p>
                 </div>
-            `;
-        }).join('');
+                <img src="/Img/${p.id}.jpg?v=${cacheBuster}" alt="${p.nombre}" onerror="this.src='/Img/default.jpg'">
+                <div class="acciones">
+                    <button onclick="abrirModalEditar(${p.id}, '${p.nombre}', '${p.descripcion}', '${p.categoria}', ${p.precio}, ${p.tiempoPreparacion}, '/Img/${p.id}.jpg?v=${cacheBuster}')">Editar</button>
+                    <button class="eliminar" onclick="abrirModalEliminar('${p.nombre}', '${p.categoria}', ${p.id})">Eliminar</button>
+                </div>
+            </div>
+        `).join('');
     }
 
-    function editarProducto(id) {
-        window.location.href = `/Admin/EditProducto/${id}`;
+    function abrirModalEditar(id, nombre, descripcion, categoria, precio, tiempo, imagen) {
+        document.getElementById('editNombre').value = nombre;
+        document.getElementById('editDescripcion').value = descripcion;
+        document.getElementById('editCategoria').value = categoria;
+        document.getElementById('editPrecio').value = precio;
+        document.getElementById('editTiempo').value = tiempo;
+        document.getElementById('editPreview').src = imagen;
+        document.getElementById('modalEditar').style.display = 'flex';
     }
 
-    function eliminarProducto(id) {
-        window.location.href = `/Admin/eliminarProducto/${id}`;
+    function abrirModalEliminar(nombre, categoria, id) {
+        document.getElementById('deleteNombre').textContent = nombre;
+        document.getElementById('deleteCategoria').textContent = `Categoría: ${categoria}`;
+        const img = document.getElementById('deleteImg');
+        img.src = `/Img/${id}.jpg?v=${Date.now()}`;
+        img.onerror = () => img.src = '/Img/default.jpg';
+        document.getElementById('modalEliminar').style.display = 'flex';
     }
 
-    const addBtn = document.getElementById('btn-agregar');
+    function cerrarModal(id) {
+        document.getElementById(id).style.display = 'none';
+    }
 
-    addBtn.addEventListener('click', () => {
-        addBtn.classList.toggle('active-btn');
-        window.location.href = '/Admin/aggProductos';
-    });
+    const editFoto = document.getElementById('editFoto');
+    const editPreview = document.getElementById('editPreview');
+    if (editFoto) {
+        editFoto.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => editPreview.src = ev.target.result;
+                reader.readAsDataURL(file);
+            }
+        });
+    }
 
     document.addEventListener('DOMContentLoaded', cargarCategorias);
 </script>

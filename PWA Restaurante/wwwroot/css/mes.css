@@ -1,129 +1,167 @@
-﻿body {
+﻿/* ============================
+   PANEL MESERO - WHAT-A-BURGER
+   Estilo cálido y moderno 🍔
+   ============================ */
+
+/* ======== General ======== */
+body {
     font-family: 'Poppins', sans-serif;
-    background-color: #f4a460;
+    background-color: #fff5e5;
     margin: 0;
-    padding: 0;
     color: #3a2d1a;
 }
 
-/* Encabezado */
+/* ======== Encabezado ======== */
 .top-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
     background-color: #d97a2b;
     color: white;
-    padding: 10px 20px;
-    border-bottom: 3px solid #a85a17;
+    padding: 12px 25px;
+    border-bottom: 4px solid #a85a17;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .header-left {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 
-    .header-left h2 {
-        margin: 0;
-        font-size: 20px;
-    }
+.user-logo {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid white;
+}
 
-    .header-left p {
-        margin: 0;
-        font-size: 13px;
-    }
+.header-left h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.header-left p {
+    margin: 0;
+    font-size: 13px;
+}
 
 .header-right {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 15px;
 }
 
 .icon-btn {
     background: none;
     border: none;
     color: white;
-    font-size: 16px;
+    font-size: 18px;
     cursor: pointer;
+    transition: color 0.2s ease, transform 0.2s;
 }
 
     .icon-btn:hover {
-        color: #ffe3c1;
+        color: #ffe7c6;
+        transform: scale(1.1);
     }
 
-.user-logo {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid white;
-}
-
-/* Contenido principal */
+/* ======== Contenido ======== */
 .content {
-    padding: 20px;
+    padding: 25px 30px;
 }
 
+/* ======== Botón crear nueva orden ======== */
 .new-order-btn {
     background-color: #ffa51f;
-    border: 2px solid #a85a17;
-    color: black;
-    font-weight: bold;
-    font-size: 16px;
-    border-radius: 6px;
-    padding: 10px 20px;
+    color: #fff;
+    font-weight: 600;
+    padding: 12px 22px;
+    border: none;
+    border-radius: 10px;
     cursor: pointer;
-    margin-bottom: 20px;
+    font-size: 16px;
+    margin: 15px 0 25px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 8px rgba(255, 136, 0, 0.3);
 }
 
-    .new-order-btn i {
-        margin-right: 6px;
+    .new-order-btn:hover {
+        background-color: #e48c0f;
+        transform: translateY(-2px);
     }
 
-/* Secciones de órdenes */
+/* ======== Secciones ======== */
 .orders-section {
-    background-color: #f7c48a;
-    padding: 10px;
-    border-radius: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
+    background: #f7c48a;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+    border: 2px solid #f2a44d;
 }
 
     .orders-section h3 {
-        font-size: 18px;
-        margin-bottom: 10px;
+        font-size: 19px;
+        margin-bottom: 15px;
+        color: #3a2d1a;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
-/* Tarjetas de órdenes */
+/* ======== Tarjetas ======== */
+#pedidosPendientes,
+#pedidosActivos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 18px;
+}
+
 .order-card {
-    background-color: #fce3be;
+    background: #fce3be;
     border: 2px solid #f4b96d;
-    border-radius: 10px;
-    padding: 6px 10px;
-    margin-bottom: 8px;
-    max-width: 300px;
-    transition: transform 0.2s ease;
+    border-radius: 12px;
+    padding: 12px 14px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
     .order-card:hover {
-        transform: scale(1.02);
+        transform: translateY(-3px);
+        box-shadow: 0 5px 12px rgba(0, 0, 0, 0.12);
     }
 
+/* ======== Cabecera de tarjeta ======== */
 .order-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 6px;
 }
 
     .order-header h4 {
         font-size: 16px;
         margin: 0;
+        font-weight: 600;
+        color: #3a2d1a;
     }
 
+/* ======== Estado ======== */
 .status {
-    font-size: 11px;
-    padding: 3px 6px;
-    border-radius: 6px;
-    color: white;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
 }
 
     .status.pending {
@@ -134,35 +172,418 @@
         background-color: #e4ad4d;
     }
 
+    .status.preparing {
+        background-color: #f5a623;
+    }
+
+    .status.ready {
+        background-color: #4caf50;
+    }
+
+/* ======== Cuerpo de tarjeta ======== */
 .order-body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 5px 0;
+    padding: 6px 0;
+    font-size: 14px;
 }
 
     .order-body .time {
-        color: red;
+        color: #c0392b;
         font-weight: bold;
         font-size: 13px;
     }
 
     .order-body .price {
-        color: green;
+        color: #2e7d32;
         font-weight: bold;
-        font-size: 16px;
+        font-size: 15px;
     }
 
+/* ======== Botón de detalles ======== */
 .details-btn {
     width: 100%;
     background-color: white;
     border: 2px solid #a5a5a5;
-    border-radius: 6px;
-    padding: 6px;
+    border-radius: 8px;
+    padding: 7px;
     font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
+    transition: all 0.2s;
+    color: #3a2d1a;
 }
 
-    .details-btn:hover {
-        background-color: #f0f0f0;
+    .details-btn i {
+        margin-right: 6px;
+        color: #d97a2b;
     }
+
+    .details-btn:hover {
+        background-color: #fff3e0;
+        border-color: #d97a2b;
+    }
+
+/* ======== Scrollbars suaves ======== */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #e2a45c;
+    border-radius: 5px;
+}
+
+    ::-webkit-scrollbar-thumb:hover {
+        background-color: #c27b32;
+    }
+
+/* ======== Responsividad ======== */
+@media (max-width: 768px) {
+    .orders-section {
+        padding: 15px;
+    }
+
+    .order-card {
+        padding: 10px;
+    }
+
+    .new-order-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+/* === Modales y vistas cálidas para Crear / Detalle Orden === */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(45, 28, 17, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.modal {
+    background: #fff9f3;
+    border-radius: 20px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    width: 90%;
+    max-width: 1200px;
+    max-height: 90%;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    animation: popIn 0.35s ease-in-out;
+}
+
+@keyframes popIn {
+    0% {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* === Encabezado del modal === */
+.modal-header.warm {
+    background: linear-gradient(90deg, #e95a21, #f9b179);
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+}
+
+    .modal-header.warm h1 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+
+.modal-header .close {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    font-size: 1.4rem;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+    .modal-header .close:hover {
+        background: rgba(255, 255, 255, 0.4);
+    }
+
+/* === Cuerpo del modal === */
+.modal-body.warm-body {
+    display: flex;
+    gap: 20px;
+    padding: 25px;
+}
+
+/* === Sección izquierda (productos y tabs) === */
+.left {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+    .form-row label {
+        font-weight: 600;
+        color: #3b2a1b;
+    }
+
+    .form-row input {
+        border: 1px solid #d7bfa6;
+        border-radius: 10px;
+        padding: 8px 10px;
+        background: #fff;
+        font-size: 1rem;
+        outline: none;
+    }
+
+        .form-row input:focus {
+            border-color: #e95a21;
+        }
+
+.notes {
+    background: #fffdf9;
+}
+
+/* === Tabs === */
+.warm-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.tab {
+    flex: 1;
+    border: none;
+    background: #f5e5d3;
+    padding: 10px;
+    border-radius: 10px;
+    font-weight: 600;
+    color: #5a3d26;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+    .tab.active {
+        background: #e95a21;
+        color: #fff;
+    }
+
+/* === Grid de productos === */
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.card.warm-card {
+    display: flex;
+    justify-content: space-between;
+    background: #fff;
+    border: 2px solid #f2d2b5;
+    border-radius: 15px;
+    padding: 15px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+    .card.warm-card:hover {
+        transform: scale(1.02);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+.card-title {
+    color: #3b2a1b;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.price {
+    color: #e95a21;
+    font-weight: bold;
+}
+
+.time {
+    color: #a28a76;
+    font-size: 0.9rem;
+}
+
+.btn.add.warm-btn {
+    background: #e95a21;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+    .btn.add.warm-btn:hover {
+        background: #ff8349;
+    }
+
+/* === Imagen de producto === */
+.product-img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+}
+
+/* === Aside derecho (resumen) === */
+.right {
+    flex: 1;
+    background: #fff7f0;
+    border-radius: 15px;
+    padding: 20px;
+    border: 2px solid #f2d2b5;
+}
+
+.summary-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #3b2a1b;
+}
+
+.cart-icon {
+    font-size: 1.5rem;
+    color: #e95a21;
+}
+
+.order-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px;
+    background: #fff;
+    border-radius: 10px;
+    margin-top: 15px;
+    border: 1px solid #f2d2b5;
+}
+
+.item-title {
+    font-weight: 600;
+}
+
+.item-price {
+    color: #e95a21;
+    font-weight: bold;
+}
+
+.circle.warm-circle {
+    background: #f2d2b5;
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+    .circle.warm-circle:hover {
+        background: #e95a21;
+        color: #fff;
+    }
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.total-amount {
+    color: #e95a21;
+}
+
+.warm-btn-main {
+    width: 100%;
+    margin-top: 20px;
+    background: #e95a21;
+    color: #fff;
+    font-weight: 700;
+    border: none;
+    border-radius: 15px;
+    padding: 12px 0;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+    .warm-btn-main:hover {
+        background: #ff7f3b;
+    }
+
+/* === Detalle de Orden === */
+.warm-loading {
+    color: #a47a54;
+    text-align: center;
+    font-weight: 600;
+    padding: 20px;
+}
+
+.warm-info {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    background: #fff7f0;
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid #f2d2b5;
+}
+
+.warm-notas textarea {
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid #f2d2b5;
+    background: #fff;
+    padding: 8px;
+    resize: none;
+}
+
+.warm-subtitle {
+    margin-top: 20px;
+    font-weight: 700;
+    color: #3b2a1b;
+    font-size: 1.2rem;
+}
+
+.warm-producto {
+    display: flex;
+    justify-content: space-between;
+    background: #fff;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #f2d2b5;
+    margin-bottom: 10px;
+}
+
+.warm-total {
+    text-align: right;
+    font-weight: 700;
+    color: #e95a21;
+    font-size: 1.1rem;
+}
