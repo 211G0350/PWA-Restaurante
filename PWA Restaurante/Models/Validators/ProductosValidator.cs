@@ -37,14 +37,14 @@ namespace PWA_Restaurante.Models.Validators
 				errores.Add("El tiempo de preparación no puede ser negativo.");
 			}
 
-			if (producto.Nombre.Length > 150)
+			if (producto.Nombre.Length > 90)
 			{
-				errores.Add("El nombre del producto debe tener una longitud máxima de 150 caracteres.");
+				errores.Add("El nombre del producto debe tener una longitud máxima de 90 caracteres.");
 			}
 
-			if (producto.Categoria.Length > 100)
+			if (producto.Categoria.Length > 25)
 			{
-				errores.Add("La categoría debe tener una longitud máxima de 100 caracteres.");
+				errores.Add("La categoría debe tener una longitud máxima de 25 caracteres.");
 			}
 
 			if (!string.IsNullOrWhiteSpace(producto.Descripcion) && producto.Descripcion.Length > 1000)
@@ -91,14 +91,14 @@ namespace PWA_Restaurante.Models.Validators
 				errores.Add("El tiempo de preparación no puede ser negativo.");
 			}
 
-			if (producto.Nombre.Length > 150)
+			if (producto.Nombre.Length > 90)
 			{
-				errores.Add("El nombre del producto debe tener una longitud máxima de 150 caracteres.");
+				errores.Add("El nombre del producto debe tener una longitud máxima de 90 caracteres.");
 			}
 
-			if (producto.Categoria.Length > 100)
+			if (producto.Categoria.Length > 25)
 			{
-				errores.Add("La categoría debe tener una longitud máxima de 100 caracteres.");
+				errores.Add("La categoría debe tener una longitud máxima de 25 caracteres.");
 			}
 
 			if (!string.IsNullOrWhiteSpace(producto.Descripcion) && producto.Descripcion.Length > 1000)

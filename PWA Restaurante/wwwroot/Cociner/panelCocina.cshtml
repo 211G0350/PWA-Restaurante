@@ -4,92 +4,258 @@
 }
 
 <div class="column" id="colNuevos">
-    <h3>🟦 Nuevos (2)</h3>
-
-    <div class="order">
-        <h4>Mesa 3</h4>
-        <p>Orden #2</p>
-        <p style="color:red;">⏰ A las 12:20</p>
-        <p>Tomado por: Leonardo</p>
-        <p class="price">$4.50</p>
-        <div class="order-buttons">
-            <button class="btn-ver" onclick="verOrden('Mesa 3', '#2')">👁 Ver</button>
-            <button class="btn-comenzar" onclick="moverAPreparacion(this)">✔ Comenzar</button>
-        </div>
-    </div>
-
-    <div class="order">
-        <h4>Mesa 4</h4>
-        <p>Orden #3</p>
-        <p style="color:red;">⏰ A las 12:26</p>
-        <p>Tomado por: Leonardo</p>
-        <p class="price">$6.50</p>
-        <div class="order-buttons">
-            <button class="btn-ver" onclick="verOrden('Mesa 4', '#3')">👁 Ver</button>
-            <button class="btn-comenzar" onclick="moverAPreparacion(this)">✔ Comenzar</button>
-        </div>
+    <h3 id="tituloNuevos">🟦 Nuevos (0)</h3>
+    <div class="orders" id="listaNuevos">
+        <p class="empty-state">Sin órdenes nuevas.</p>
     </div>
 </div>
 
 <div class="column" id="colPreparacion">
-    <h3>🟧 En Preparación (1)</h3>
-
-    <div class="order">
-        <h4>Mesa 5</h4>
-        <p>Orden #4</p>
-        <p style="color:red;">⏰ A las 12:30</p>
-        <p>Tomado por: Carlos</p>
-        <p class="price">$8.00</p>
-        <div class="order-buttons">
-            <button class="btn-ver" onclick="verOrden('Mesa 5', '#4')">👁 Ver</button>
-            <button class="btn-comenzar" onclick="moverAListos(this)">✔ Listo</button>
-        </div>
+    <h3 id="tituloPreparacion">🟧 En Preparación (0)</h3>
+    <div class="orders" id="listaPreparacion">
+        <p class="empty-state">Sin órdenes en preparación.</p>
     </div>
 </div>
 
 <div class="column" id="colListos">
-    <h3>🟩 Listos (1)</h3>
-
-    <div class="order">
-        <h4>Mesa 6</h4>
-        <p>Orden #1</p>
-        <p style="color:red;">⏰ A las 12:10</p>
-        <p>Tomado por: Ana</p>
-        <p class="price">$5.50</p>
-        <div class="order-buttons">
-            <button class="btn-ver" onclick="verOrden('Mesa 6', '#1')">👁 Ver</button>
-        </div>
+    <h3 id="tituloListos">🟩 Listos (0)</h3>
+    <div class="orders" id="listaListos">
+        <p class="empty-state">Sin órdenes listas.</p>
     </div>
 </div>
 
     <script>
-        function verOrden(mesa, orden) {
-            alert(`👁 Detalles de ${mesa}\nOrden ${orden}`);
-        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const state = {
+                pedidos: {
+                    nuevos: [],
+                    preparacion: [],
+                    listos: []
+                },
+                cargaInicial: true
+            };
 
-        function moverAPreparacion(btn) {
-            const card = btn.closest(".order");
-            document.getElementById("colPreparacion").querySelector(".orders")?.appendChild(card);
-            btn.textContent = "✔ Listo";
-            btn.onclick = () => moverAListos(btn);
-            actualizarContadores();
-        }
+            const ui = {
+                columnas: {
+                    nuevos: {
+                        titulo: document.getElementById('tituloNuevos'),
+                        contenedor: document.getElementById('listaNuevos')
+                    },
+                    preparacion: {
+                        titulo: document.getElementById('tituloPreparacion'),
+                        contenedor: document.getElementById('listaPreparacion')
+                    },
+                    listos: {
+                        titulo: document.getElementById('tituloListos'),
+                        contenedor: document.getElementById('listaListos')
+                    }
+                }
+            };
 
-        function moverAListos(btn) {
-            const card = btn.closest(".order");
-            document.getElementById("colListos").querySelector(".orders")?.appendChild(card);
-            btn.remove(); // ya no necesita más botones
-            actualizarContadores();
-        }
+            init();
 
-        function actualizarContadores() {
-            const nuevos = document.querySelectorAll("#colNuevos .order").length;
-            const prep = document.querySelectorAll("#colPreparacion .order").length;
-            const listos = document.querySelectorAll("#colListos .order").length;
+            function init() {
+                const token = localStorage.getItem('token');
+                const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
 
-            document.querySelector("#colNuevos h3").textContent = `🟦 Nuevos (${nuevos})`;
-            document.querySelector("#colPreparacion h3").textContent = `🟧 En Preparación (${prep})`;
-            document.querySelector("#colListos h3").textContent = `🟩 Listos (${listos})`;
-        }
+                if (!token || (usuario?.rol ?? '').toLowerCase() !== 'cocinero') {
+                    alert('Acceso no autorizado. Inicia sesión como cocinero.');
+                    window.location.href = '/';
+                    return;
+                }
+
+                cargarPedidos();
+            }
+
+            async function cargarPedidos() {
+                mostrarEstadoCarga(true);
+                try {
+                    const [nuevos, preparacion, listos] = await Promise.all([
+                        fetchPedidos('/api/Cocina/Enviados'),
+                        fetchPedidos('/api/Cocina/EnPreparacion'),
+                        fetchPedidos('/api/Cocina/Listo')
+                    ]);
+
+                    state.pedidos.nuevos = nuevos;
+                    state.pedidos.preparacion = preparacion;
+                    state.pedidos.listos = listos;
+
+                    renderColumnas();
+                } catch (error) {
+                    console.error('Error al cargar pedidos:', error);
+                    alert(error?.message || 'No se pudieron cargar los pedidos.');
+                } finally {
+                    mostrarEstadoCarga(false);
+                }
+            }
+
+            function mostrarEstadoCarga(mostrando) {
+                if (!mostrando) return;
+                Object.values(ui.columnas).forEach(({ contenedor }) => {
+                    contenedor.innerHTML = '<p class="empty-state">Cargando pedidos...</p>';
+                });
+            }
+
+            async function fetchPedidos(url) {
+                const token = localStorage.getItem('token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                const response = await fetch(url, { headers });
+                const isJson = (response.headers.get('content-type') || '').includes('application/json');
+                const body = isJson ? await response.json().catch(() => null) : await response.text().catch(() => '');
+
+                if (!response.ok) {
+                    const message = Array.isArray(body)
+                        ? body.join(', ')
+                        : (body?.message || (typeof body === 'string' && body.trim()) || `Error ${response.status}`);
+                    throw new Error(message);
+                }
+
+                if (!Array.isArray(body)) return [];
+                return body.map(normalizarPedido);
+            }
+
+            function normalizarPedido(data = {}) {
+                return {
+                    id: data.id ?? data.Id ?? 0,
+                    numMesa: data.numMesa ?? data.NumMesa ?? '—',
+                    tomadoEn: data.tomadoEn ?? data.TomadoEn ?? null,
+                    precioTotal: Number(data.precioTotal ?? data.PrecioTotal ?? 0),
+                    estado: data.estado ?? data.Estado ?? '',
+                    usuario: data.usuarioNombre ?? data.UsuarioNombre ?? '—'
+                };
+            }
+
+            function renderColumnas() {
+                renderColumna(ui.columnas.nuevos, state.pedidos.nuevos, 'nuevos');
+                renderColumna(ui.columnas.preparacion, state.pedidos.preparacion, 'preparacion');
+                renderColumna(ui.columnas.listos, state.pedidos.listos, 'listos');
+            }
+
+            function renderColumna(columnaUi, pedidos, tipo) {
+                if (!columnaUi) return;
+                const { titulo, contenedor } = columnaUi;
+
+                if (titulo) {
+                    const encabezado = tipo === 'nuevos'
+                        ? '🟦 Nuevos'
+                        : tipo === 'preparacion'
+                            ? '🟧 En Preparación'
+                            : '🟩 Listos';
+                    titulo.textContent = `${encabezado} (${pedidos.length})`;
+                }
+
+                contenedor.innerHTML = '';
+                if (!pedidos.length) {
+                    const vacio = document.createElement('p');
+                    vacio.className = 'empty-state';
+                    vacio.textContent = tipo === 'nuevos'
+                        ? 'Sin órdenes nuevas.'
+                        : tipo === 'preparacion'
+                            ? 'Sin órdenes en preparación.'
+                            : 'Sin órdenes listas.';
+                    contenedor.appendChild(vacio);
+                    return;
+                }
+
+                const fragment = document.createDocumentFragment();
+                pedidos.forEach(pedido => {
+                    fragment.appendChild(crearTarjetaPedido(pedido, tipo));
+                });
+                contenedor.appendChild(fragment);
+            }
+
+            function crearTarjetaPedido(pedido, tipo) {
+                const card = document.createElement('div');
+                card.className = 'order';
+                card.dataset.pedidoId = pedido.id;
+
+                card.innerHTML = `
+                    <h4>Mesa ${pedido.numMesa}</h4>
+                    <p>Orden #${pedido.id}</p>
+                    <p style="color:red;">⏰ ${formatearHora(pedido.tomadoEn)}</p>
+                    <p>Tomado por: ${escapeHtml(pedido.usuario)}</p>
+                    <p class="price">$${pedido.precioTotal.toFixed(2)}</p>
+                `;
+
+                const botones = document.createElement('div');
+                botones.className = 'order-buttons';
+
+                const btnVer = document.createElement('button');
+                btnVer.className = 'btn-ver';
+                btnVer.type = 'button';
+                btnVer.textContent = '👁 Ver';
+                btnVer.onclick = null;
+                botones.appendChild(btnVer);
+
+                if (tipo !== 'listos') {
+                    const btnAccion = document.createElement('button');
+                    btnAccion.className = 'btn-comenzar';
+                    btnAccion.type = 'button';
+                    btnAccion.textContent = tipo === 'nuevos' ? '✔ Comenzar' : '✔ Listo';
+                    btnAccion.addEventListener('click', () => actualizarEstadoPedido(pedido.id, btnAccion));
+                    botones.appendChild(btnAccion);
+                }
+
+                card.appendChild(botones);
+                return card;
+            }
+
+            async function actualizarEstadoPedido(id, boton) {
+                if (!id) return;
+                const textoOriginal = boton.textContent;
+                boton.disabled = true;
+                boton.textContent = 'Actualizando...';
+
+                try {
+                    const token = localStorage.getItem('token');
+                    const headers = { 'Content-Type': 'application/json' };
+                    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                    const response = await fetch(`/api/Cocina/ActualizarEstado/${id}`, {
+                        method: 'PUT',
+                        headers
+                    });
+
+                    const isJson = (response.headers.get('content-type') || '').includes('application/json');
+                    const body = isJson ? await response.json().catch(() => null) : await response.text().catch(() => '');
+
+                    if (!response.ok) {
+                        const message = Array.isArray(body)
+                            ? body.join(', ')
+                            : (body?.message || (typeof body === 'string' && body.trim()) || `Error ${response.status}`);
+                        throw new Error(message);
+                    }
+
+                    await cargarPedidos();
+                } catch (error) {
+                    console.error('Error al actualizar estado:', error);
+                    alert(error?.message || 'No se pudo actualizar el estado del pedido.');
+                } finally {
+                    boton.disabled = false;
+                    boton.textContent = textoOriginal;
+                }
+            }
+
+            function formatearHora(fechaIso) {
+                if (!fechaIso) return '—';
+                const fecha = new Date(fechaIso);
+                if (Number.isNaN(fecha.getTime())) return '—';
+                return fecha.toLocaleTimeString('es-ES', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+
+            function escapeHtml(str = '') {
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+        });
     </script>
 

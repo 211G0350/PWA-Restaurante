@@ -1,7 +1,4 @@
-﻿@*
-    Layout principal para el Panel del Mesero con diseño renovado
-*@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
@@ -34,21 +31,16 @@
         @RenderBody()
     </main>
 
-    @RenderSection("Scripts", required: false)
-
     <script>
-        // Cerrar sesión: limpia datos y regresa al inicio
         function cerrarSesion() {
             localStorage.clear();
             window.location.href = "/";
         }
 
-        // Sincronizar: recargar la página
         function sincronizar() {
             location.reload();
         }
 
-        // Mostrar nombre del usuario si está guardado
         document.addEventListener("DOMContentLoaded", () => {
             const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
             if (usuario?.nombre) {
