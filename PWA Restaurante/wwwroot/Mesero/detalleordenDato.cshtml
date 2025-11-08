@@ -44,79 +44,184 @@
 </div>
 
 <script>
-    function getAuthToken() {
-        return localStorage.getItem('token') || sessionStorage.getItem('token');
-    }
+    document.addEventListener('DOMContentLoaded', () => {
+        const state = {
+            pedidoId: obtenerIdDeUrl(),
+            pedido: null
+        };
 
-    function obtenerIdDeUrl() {
-        const path = window.location.pathname.split('/');
-        const idx = path.indexOf('detalleordenDato') + 1;
-        return idx < path.length ? parseInt(path[idx]) : null;
-    }
+        const ui = {
+            cargando: document.getElementById('cargando'),
+            contenedor: document.getElementById('contenidoPedido'),
+            titulo: document.getElementById('tituloOrden'),
+            mesa: document.getElementById('numMesa'),
+            mesero: document.getElementById('nombreMesero'),
+            fechaHora: document.getElementById('fechaHora'),
+            estado: document.getElementById('estadoPedido'),
+            notas: document.getElementById('notas'),
+            total: document.getElementById('totalPedido'),
+            productos: document.getElementById('listaProductos')
+        };
 
-    function formatearFecha(fecha) {
-        const d = new Date(fecha);
-        return d.toLocaleString('es-ES', {
-            day: '2-digit', month: '2-digit', year: 'numeric',
-            hour: '2-digit', minute: '2-digit'
-        });
-    }
+        init();
 
-    async function cargarDetallesPedido() {
-        const pedidoId = obtenerIdDeUrl();
-        if (!pedidoId) return alert('ID de pedido no válido');
+        function init() {
+            if (!state.pedidoId) {
+                mostrarError('ID de pedido no válido.');
+                return;
+            }
+            cargarDetallesPedido();
+        }
 
-        const cargando = document.getElementById('cargando');
-        const cont = document.getElementById('contenidoPedido');
-        cargando.style.display = 'block';
-        cont.style.display = 'none';
+        function getAuthToken() {
+            return localStorage.getItem('token') || sessionStorage.getItem('token');
+        }
 
-        try {
+        async function fetchWithAuth(url, options = {}) {
             const token = getAuthToken();
-            const headers = { 'Content-Type': 'application/json' };
+            const headers = { 'Content-Type': 'application/json', ...options.headers };
             if (token) headers['Authorization'] = `Bearer ${token}`;
+            const response = await fetch(url, { ...options, headers });
+            const isJson = (response.headers.get('content-type') || '').includes('application/json');
+            const body = isJson ? await response.json().catch(() => null) : await response.text().catch(() => '');
+            if (!response.ok) {
+                const message = Array.isArray(body)
+                    ? body.join(', ')
+                    : (body?.message || (typeof body === 'string' && body.trim()) || `Error ${response.status}`);
+                throw new Error(message);
+            }
+            return body;
+        }
 
-            const resp = await fetch(`/api/Pedidos/VerDetalles/${pedidoId}`, { headers });
-            if (!resp.ok) throw new Error('Error al cargar');
+        async function cargarDetallesPedido() {
+            mostrarCargando(true);
+            try {
+                const data = await fetchWithAuth(`/api/Pedidos/VerDetalles/${state.pedidoId}`);
+                state.pedido = normalizarPedido(data);
+                renderPedido();
+            } catch (error) {
+                console.error('Error al obtener pedido:', error);
+                mostrarError(error?.message || 'No se pudieron cargar los detalles del pedido.');
+            } finally {
+                mostrarCargando(false);
+            }
+        }
 
-            const pedido = await resp.json();
+        function normalizarPedido(data = {}) {
+            const detalles = (data.detalles ?? data.Detalles ?? []).map(detalle => ({
+                nombre: detalle.nombreProducto ?? detalle.NombreProducto ?? 'Producto sin nombre',
+                cantidad: Number(detalle.cantidad ?? detalle.Cantidad ?? 0),
+                precioUnitario: Number(detalle.precioUnitario ?? detalle.PrecioUnitario ?? 0),
+                subtotal: Number(detalle.subtotal ?? detalle.Subtotal ?? 0)
+            }));
 
-            document.getElementById('tituloOrden').textContent = `Detalles de Orden #${pedido.Id || pedido.id}`;
-            document.getElementById('numMesa').textContent = pedido.NumMesa || '';
-            document.getElementById('nombreMesero').textContent = pedido.UsuarioNombre || '';
-            document.getElementById('fechaHora').textContent = formatearFecha(pedido.TomadoEn || '');
-            document.getElementById('estadoPedido').textContent = pedido.Estado || '';
-            document.getElementById('notas').value = pedido.NotasEspeciales || '';
-            document.getElementById('totalPedido').textContent = `$${(pedido.PrecioTotal || 0).toFixed(2)}`;
+            return {
+                id: data.id ?? data.Id ?? state.pedidoId,
+                numMesa: data.numMesa ?? data.NumMesa ?? '—',
+                mesero: data.usuarioNombre ?? data.UsuarioNombre ?? '—',
+                tomadoEn: data.tomadoEn ?? data.TomadoEn ?? null,
+                estado: data.estado ?? data.Estado ?? '—',
+                notas: data.notasEspeciales ?? data.NotasEspeciales ?? '',
+                precioTotal: Number(data.precioTotal ?? data.PrecioTotal ?? 0),
+                detalles
+            };
+        }
 
-            const lista = document.getElementById('listaProductos');
-            lista.innerHTML = '';
+        function renderPedido() {
+            if (!state.pedido) return;
 
-            if (pedido.Detalles?.length > 0) {
-                pedido.Detalles.forEach(d => {
-                    lista.innerHTML += `
-                        <div class="producto warm-producto">
-                            <div class="detalles">
-                                <p class="nombre">${d.NombreProducto}</p>
-                                <p class="cantidad">Cantidad: ${d.Cantidad}</p>
-                            </div>
-                            <div class="precio">
-                                <p class="total">$${d.Subtotal.toFixed(2)}</p>
-                                <p class="unitario">Unitario: $${d.PrecioUnitario.toFixed(2)}</p>
-                            </div>
-                        </div>`;
-                });
-            } else {
-                lista.innerHTML = '<p>No hay productos en este pedido</p>';
+            ui.titulo.textContent = `Detalles de Orden #${state.pedido.id}`;
+            ui.mesa.textContent = state.pedido.numMesa || '—';
+            ui.mesero.textContent = state.pedido.mesero || '—';
+            ui.fechaHora.textContent = state.pedido.tomadoEn ? formatearFecha(state.pedido.tomadoEn) : '—';
+            ui.estado.textContent = state.pedido.estado || '—';
+            ui.notas.value = state.pedido.notas || 'Sin notas especiales';
+            ui.total.textContent = `$${state.pedido.precioTotal.toFixed(2)}`;
+
+            renderProductos(state.pedido.detalles);
+            ui.contenedor.style.display = 'block';
+        }
+
+        function renderProductos(detalles = []) {
+            ui.productos.innerHTML = '';
+
+            if (!detalles.length) {
+                ui.productos.innerHTML = '<p class="warm-empty">Esta orden no contiene productos.</p>';
+                return;
             }
 
-            cargando.style.display = 'none';
-            cont.style.display = 'block';
-        } catch (err) {
-            console.error(err);
-            alert('Error al cargar los detalles');
+            const fragment = document.createDocumentFragment();
+            detalles.forEach(detalle => {
+                fragment.appendChild(crearProductoElemento(detalle));
+            });
+            ui.productos.appendChild(fragment);
         }
-    }
 
-    document.addEventListener('DOMContentLoaded', cargarDetallesPedido);
+        function crearProductoElemento(detalle) {
+            const producto = document.createElement('div');
+            producto.className = 'producto warm-producto';
+
+            const info = document.createElement('div');
+            info.className = 'detalles';
+            info.innerHTML = `
+                <p class="nombre">${escapeHtml(detalle.nombre)}</p>
+                <p class="cantidad">Cantidad: ${detalle.cantidad}</p>
+            `;
+
+            const precio = document.createElement('div');
+            precio.className = 'precio';
+            precio.innerHTML = `
+                <p class="total">$${detalle.subtotal.toFixed(2)}</p>
+                <p class="unitario">Unitario: $${detalle.precioUnitario.toFixed(2)}</p>
+            `;
+
+            producto.appendChild(info);
+            producto.appendChild(precio);
+            return producto;
+        }
+
+        function mostrarCargando(mostrar) {
+            if (ui.cargando) ui.cargando.style.display = mostrar ? 'block' : 'none';
+            if (ui.contenedor && mostrar) ui.contenedor.style.display = 'none';
+        }
+
+        function mostrarError(mensaje) {
+            if (ui.cargando) {
+                ui.cargando.textContent = mensaje;
+                ui.cargando.classList.add('error');
+                ui.cargando.style.display = 'block';
+            } else {
+                alert(mensaje);
+            }
+        }
+
+        function obtenerIdDeUrl() {
+            const partes = window.location.pathname.split('/').filter(Boolean);
+            const idx = partes.indexOf('detalleordenDato');
+            if (idx === -1 || idx === partes.length - 1) return null;
+            const id = Number(partes[idx + 1]);
+            return Number.isFinite(id) ? id : null;
+        }
+
+        function formatearFecha(valor) {
+            const fecha = new Date(valor);
+            if (Number.isNaN(fecha.getTime())) return '—';
+            return fecha.toLocaleString('es-ES', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function escapeHtml(str = '') {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+    });
 </script>
