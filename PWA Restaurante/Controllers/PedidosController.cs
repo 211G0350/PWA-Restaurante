@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using PWA_Restaurante.Models.DTOs;
 using PWA_Restaurante.Models.Entities;
 using PWA_Restaurante.Repositories;
+using Microsoft.AspNetCore.SignalR;
+using PWA_Restaurante.Services;
 
 namespace PWA_Restaurante.Controllers
 {
@@ -16,17 +18,20 @@ namespace PWA_Restaurante.Controllers
 		private readonly Repository<PedidoDetalles> _detalleRepository;
 		private readonly Repository<Productos> _productoRepository;
 		private readonly Repository<Usuarios> _usuarioRepository;
+		private readonly IHubContext<PedidosHub> _hubContext;
 
 		public PedidosController(
 			Repository<Pedidos> pedidoRepository,
 			Repository<PedidoDetalles> detalleRepository,
 			Repository<Productos> productoRepository,
-			Repository<Usuarios> usuarioRepository)
+			Repository<Usuarios> usuarioRepository,
+			IHubContext<PedidosHub> hubContext)
 		{
 			_pedidoRepository = pedidoRepository;
 			_detalleRepository = detalleRepository;
 			_productoRepository = productoRepository;
 			_usuarioRepository = usuarioRepository;
+			_hubContext = hubContext;
 		}
 
 		[HttpGet("Pendientes")]
@@ -303,6 +308,52 @@ namespace PWA_Restaurante.Controllers
 			_pedidoRepository.Update(pedidoExistente);
 
 			return Ok(new { message = "Pedido editado exitosamente" });
+		}
+
+		[HttpPut("EnviarPedidos")]
+		public async Task<IActionResult> EnviarPedidos()
+		{
+			var pedidosPendientes = _pedidoRepository.GetAllWithTracking()
+				.Where(p => p.Estado == "pendiente")
+				.ToList();
+
+			if (!pedidosPendientes.Any())
+			{
+				await _hubContext.Clients.Group("Cocina").SendAsync("ActualizarPedidos");
+				return Ok(new { message = "No hay pedidos pendientes para enviar.", pedidosActualizados = 0 });
+			}
+
+			var fechaEnvio = DateTime.Now;
+
+			foreach (var pedido in pedidosPendientes)
+			{
+				var estadoAnterior = pedido.Estado;
+				pedido.Estado = "enviado";
+				_pedidoRepository.Update(pedido);
+
+				await _hubContext.Clients.Group("Cocina").SendAsync("PedidoEnviado", new
+				{
+					pedidoId = pedido.Id,
+					numMesa = pedido.NumMesa,
+					horaEnviado = fechaEnvio
+				});
+
+				await _hubContext.Clients.All.SendAsync("EstadoActualizado", new
+				{
+					pedidoId = pedido.Id,
+					estadoAnterior,
+					nuevoEstado = "enviado",
+					numMesa = pedido.NumMesa
+				});
+			}
+
+			await _hubContext.Clients.All.SendAsync("ActualizarPedidos");
+
+			return Ok(new
+			{
+				message = "Pedidos pendientes enviados a cocina.",
+				pedidosActualizados = pedidosPendientes.Count
+			});
 		}
 
 		[HttpGet("ObtenerParaCancelar/{id}")]

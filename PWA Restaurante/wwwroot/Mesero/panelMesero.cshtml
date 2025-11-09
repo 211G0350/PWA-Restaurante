@@ -23,7 +23,7 @@
 
     <script>
         function getAuthToken() {
-            return localStorage.getItem('token') || sessionStorage.getItem('token');
+            return sessionStorage.getItem('token') || localStorage.getItem('token');
         }
 
         function formatearFecha(fecha) {
@@ -144,9 +144,21 @@
             window.location.href = '/Mesero/crearNuevaOr';
         });
 
-        document.addEventListener('DOMContentLoaded', () => {
+        const actualizarListados = () => {
             cargarPedidosPendientes();
             cargarPedidosActivos();
+        };
+
+        window.addEventListener('pedidos:hubListo', actualizarListados);
+        window.addEventListener('pedidos:actualizar', actualizarListados);
+        window.addEventListener('pedidos:estadoActualizado', actualizarListados);
+        window.addEventListener('pedidos:pedidoEnviado', actualizarListados);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.pedidosHubClient?.ensureStarted) {
+                window.pedidosHubClient.ensureStarted();
+            }
+            actualizarListados();
         });
     </script>
 

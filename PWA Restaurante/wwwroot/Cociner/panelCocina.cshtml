@@ -54,9 +54,22 @@
 
             init();
 
+            const manejarEventosTiempoReal = () => {
+                cargarPedidos();
+            };
+
+            window.addEventListener('pedidos:hubListo', manejarEventosTiempoReal);
+            window.addEventListener('pedidos:pedidoEnviado', manejarEventosTiempoReal);
+            window.addEventListener('pedidos:actualizar', manejarEventosTiempoReal);
+            window.addEventListener('pedidos:estadoActualizado', manejarEventosTiempoReal);
+
+            if (window.pedidosHubClient?.ensureStarted) {
+                window.pedidosHubClient.ensureStarted();
+            }
+
             function init() {
-                const token = localStorage.getItem('token');
-                const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+                const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+                const usuario = JSON.parse(sessionStorage.getItem('usuario') || localStorage.getItem('usuario') || '{}');
 
                 if (!token || (usuario?.rol ?? '').toLowerCase() !== 'cocinero') {
                     alert('Acceso no autorizado. Inicia sesión como cocinero.');
@@ -97,7 +110,7 @@
             }
 
             async function fetchPedidos(url) {
-                const token = localStorage.getItem('token');
+                const token = sessionStorage.getItem('token') || localStorage.getItem('token');
                 const headers = { 'Content-Type': 'application/json' };
                 if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -209,7 +222,7 @@
                 boton.textContent = 'Actualizando...';
 
                 try {
-                    const token = localStorage.getItem('token');
+                    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
                     const headers = { 'Content-Type': 'application/json' };
                     if (token) headers['Authorization'] = `Bearer ${token}`;
 

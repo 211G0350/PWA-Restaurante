@@ -28,27 +28,116 @@
         </div>
     </header>
 
-    <main class="container">
-        @RenderBody()
-    </main>
+
+	<script>
+		(function asegurarSesionCocinero() {
+			try {
+				const tokenSesion = sessionStorage.getItem("token");
+				const tokenLocal = localStorage.getItem("token");
+				if (!tokenSesion && tokenLocal) {
+					sessionStorage.setItem("token", tokenLocal);
+				}
+
+				const usuarioSesion = sessionStorage.getItem("usuario");
+				const usuarioLocal = localStorage.getItem("usuario");
+				if (!usuarioSesion && usuarioLocal) {
+					sessionStorage.setItem("usuario", usuarioLocal);
+				}
+			} catch (error) {
+				console.warn("No se pudo sincronizar el almacenamiento de sesión:", error);
+			}
+		})();
+	</script>
+
+	<main class="container">
+		@RenderBody()
+	</main>
 
 
-    <script>
-        function cerrarSesion() {
-            localStorage.clear();
-            window.location.href = "/";
-        }
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	<script>
+		const obtenerToken = () => sessionStorage.getItem("token") || localStorage.getItem("token") || "";
+		const obtenerUsuario = () => {
+			const parseUsuario = (valor) => {
+				if (!valor) return null;
+				try {
+					return JSON.parse(valor);
+				} catch {
+					return null;
+				}
+			};
 
-        function sincronizar() {
-            location.reload();
-        }
+			const usuarioSesion = parseUsuario(sessionStorage.getItem("usuario"));
+			if (usuarioSesion) {
+				return usuarioSesion;
+			}
 
-        document.addEventListener("DOMContentLoaded", () => {
-            const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
-            if (usuario?.nombre) {
-                document.getElementById("nombreUsuario").textContent = usuario.nombre;
-            }
-        });
-    </script>
+			return parseUsuario(localStorage.getItem("usuario"));
+		};
+
+		function cerrarSesion() {
+			localStorage.clear();
+			sessionStorage.clear();
+			window.location.href = "/";
+		}
+
+		function sincronizar() {
+			location.reload();
+		}
+
+		function mostrarNombreUsuario() {
+			const usuario = obtenerUsuario();
+			if (usuario?.nombre) {
+				document.getElementById("nombreUsuario").textContent = usuario.nombre;
+			}
+		}
+
+		(function inicializarHub() {
+			if (!window.signalR) {
+				return;
+			}
+
+			const connection = new signalR.HubConnectionBuilder()
+				.withUrl("/pedidosHub", {
+					accessTokenFactory: () => obtenerToken()
+				})
+				.withAutomaticReconnect()
+				.build();
+
+			const iniciarConexion = async () => {
+				if (connection.state === signalR.HubConnectionState.Connected || connection.state === signalR.HubConnectionState.Connecting) {
+					return;
+				}
+
+				try {
+					await connection.start();
+					await connection.invoke("JoinCocinaGroup");
+					window.dispatchEvent(new Event("pedidos:hubListo"));
+				} catch (error) {
+					console.error("No se pudo conectar con PedidosHub:", error);
+					setTimeout(iniciarConexion, 3000);
+				}
+			};
+
+			window.pedidosHubClient = {
+				connection,
+				ensureStarted: iniciarConexion
+			};
+
+			connection.on("PedidoEnviado", data => window.dispatchEvent(new CustomEvent("pedidos:pedidoEnviado", { detail: data })));
+			connection.on("ActualizarPedidos", () => window.dispatchEvent(new CustomEvent("pedidos:actualizar")));
+			connection.on("EstadoActualizado", data => window.dispatchEvent(new CustomEvent("pedidos:estadoActualizado", { detail: data })));
+
+			connection.onreconnected(() => window.dispatchEvent(new Event("pedidos:hubListo")));
+
+			document.addEventListener("DOMContentLoaded", () => {
+				if (obtenerToken()) {
+					iniciarConexion();
+				}
+			});
+		})();
+
+		document.addEventListener("DOMContentLoaded", mostrarNombreUsuario);
+	</script>
 </body>
 </html>

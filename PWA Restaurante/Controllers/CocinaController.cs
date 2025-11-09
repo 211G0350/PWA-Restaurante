@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using PWA_Restaurante.Models.DTOs;
 using PWA_Restaurante.Models.Entities;
 using PWA_Restaurante.Repositories;
+using Microsoft.AspNetCore.SignalR;
+using PWA_Restaurante.Services;
 
 namespace PWA_Restaurante.Controllers
 {
@@ -16,17 +18,20 @@ namespace PWA_Restaurante.Controllers
 		private readonly Repository<PedidoDetalles> _detalleRepository;
 		private readonly Repository<Productos> _productoRepository;
 		private readonly Repository<Usuarios> _usuarioRepository;
+		private readonly IHubContext<PedidosHub> _hubContext;
 
 		public CocinaController(
 			Repository<Pedidos> pedidoRepository,
 			Repository<PedidoDetalles> detalleRepository,
 			Repository<Productos> productoRepository,
-			Repository<Usuarios> usuarioRepository)
+			Repository<Usuarios> usuarioRepository,
+			IHubContext<PedidosHub> hubContext)
 		{
 			_pedidoRepository = pedidoRepository;
 			_detalleRepository = detalleRepository;
 			_productoRepository = productoRepository;
 			_usuarioRepository = usuarioRepository;
+			_hubContext = hubContext;
 		}
 
 		[HttpGet("Enviados")]
@@ -122,7 +127,7 @@ namespace PWA_Restaurante.Controllers
 		}
 
 		[HttpPut("ActualizarEstado/{id}")]
-		public IActionResult ActualizarEstado(int id)
+		public async Task<IActionResult> ActualizarEstado(int id)
 		{
 			var pedido = _pedidoRepository.GetByIdWithTracking(id);
 			if (pedido == null)
@@ -130,10 +135,11 @@ namespace PWA_Restaurante.Controllers
 				return NotFound("Pedido no encontrado");
 			}
 
+			var estadoAnterior = pedido.Estado;
 			string nuevoEstado;
 			string mensaje;
 
-			switch (pedido.Estado)
+			switch (estadoAnterior)
 			{
 				case "enviado":
 					nuevoEstado = "en preparacion";
@@ -154,11 +160,21 @@ namespace PWA_Restaurante.Controllers
 			pedido.Estado = nuevoEstado;
 			_pedidoRepository.Update(pedido);
 
+			await _hubContext.Clients.All.SendAsync("EstadoActualizado", new
+			{
+				pedidoId = pedido.Id,
+				estadoAnterior,
+				nuevoEstado,
+				numMesa = pedido.NumMesa
+			});
+
+			await _hubContext.Clients.All.SendAsync("ActualizarPedidos");
+
 			return Ok(new
 			{
 				message = mensaje,
 				pedidoId = pedido.Id,
-				estadoAnterior = pedido.Estado == "en preparacion" ? "enviado" : "en preparacion",
+				estadoAnterior,
 				nuevoEstado = nuevoEstado,
 				numMesa = pedido.NumMesa
 			});

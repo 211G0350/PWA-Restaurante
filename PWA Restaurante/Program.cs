@@ -7,6 +7,7 @@ using PWA_Restaurante.Repositories;
 using PWA_Restaurante.Services;
 using System.Text;
 using System.IO;
+using System.Threading.Tasks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,6 +59,22 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 				Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
 			ValidateLifetime = true,
 			ClockSkew = TimeSpan.Zero
+		};
+
+		jwtOptions.Events = new JwtBearerEvents
+		{
+			OnMessageReceived = context =>
+			{
+				var accessToken = context.Request.Query["access_token"];
+				var path = context.HttpContext.Request.Path;
+
+				if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/pedidosHub"))
+				{
+					context.Token = accessToken;
+				}
+
+				return Task.CompletedTask;
+			}
 		};
 	});
 

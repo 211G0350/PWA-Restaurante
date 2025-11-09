@@ -27,26 +27,151 @@
         </div>
     </header>
 
-    <main class="content">
-        @RenderBody()
-    </main>
+	<script>
+		(function asegurarSesionMesero() {
+			try {
+				const tokenSesion = sessionStorage.getItem("token");
+				const tokenLocal = localStorage.getItem("token");
+				if (!tokenSesion && tokenLocal) {
+					sessionStorage.setItem("token", tokenLocal);
+				}
 
-    <script>
-        function cerrarSesion() {
-            localStorage.clear();
-            window.location.href = "/";
-        }
+				const usuarioSesion = sessionStorage.getItem("usuario");
+				const usuarioLocal = localStorage.getItem("usuario");
+				if (!usuarioSesion && usuarioLocal) {
+					sessionStorage.setItem("usuario", usuarioLocal);
+				}
+			} catch (error) {
+				console.warn("No se pudo sincronizar el almacenamiento de sesión:", error);
+			}
+		})();
+	</script>
 
-        function sincronizar() {
-            location.reload();
-        }
+	<main class="content">
+		@RenderBody()
+	</main>
 
-        document.addEventListener("DOMContentLoaded", () => {
-            const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
-            if (usuario?.nombre) {
-                document.getElementById("nombreUsuario").textContent = usuario.nombre;
-            }
-        });
-    </script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	<script>
+		const obtenerToken = () => sessionStorage.getItem("token") || localStorage.getItem("token") || "";
+		const obtenerUsuario = () => {
+			const parseUsuario = (valor) => {
+				if (!valor) return null;
+				try {
+					return JSON.parse(valor);
+				} catch {
+					return null;
+				}
+			};
+
+			const usuarioSesion = parseUsuario(sessionStorage.getItem("usuario"));
+			if (usuarioSesion) {
+				return usuarioSesion;
+			}
+
+			return parseUsuario(localStorage.getItem("usuario"));
+		};
+
+		function cerrarSesion() {
+			localStorage.clear();
+			sessionStorage.clear();
+			window.location.href = "/";
+		}
+
+		async function sincronizar() {
+			try {
+				await enviarPedidosPendientes();
+			} catch (error) {
+				console.error("Error al enviar pedidos pendientes:", error);
+				if (error?.message) {
+					alert(error.message);
+				}
+			} finally {
+				location.reload();
+			}
+		}
+
+		async function enviarPedidosPendientes() {
+			const token = obtenerToken();
+			if (!token) {
+				throw new Error("No se encontró el token de autenticación.");
+			}
+
+			const headers = { "Content-Type": "application/json" };
+			if (token) {
+				headers["Authorization"] = `Bearer ${token}`;
+			}
+
+			const response = await fetch("/api/Pedidos/EnviarPedidos", {
+				method: "PUT",
+				headers
+			});
+
+			const contentType = response.headers.get("content-type") || "";
+			const isJson = contentType.includes("application/json");
+			const body = isJson ? await response.json().catch(() => null) : await response.text().catch(() => "");
+
+			if (!response.ok) {
+				const message = body?.message || (typeof body === "string" && body.trim()) || `Error ${response.status}`;
+				throw new Error(message);
+			}
+
+			return body;
+		}
+
+		function mostrarNombreUsuario() {
+			const usuario = obtenerUsuario();
+			if (usuario?.nombre) {
+				document.getElementById("nombreUsuario").textContent = usuario.nombre;
+			}
+		}
+
+		(function inicializarHub() {
+			if (!window.signalR) {
+				return;
+			}
+
+			const connection = new signalR.HubConnectionBuilder()
+				.withUrl("/pedidosHub", {
+					accessTokenFactory: () => obtenerToken()
+				})
+				.withAutomaticReconnect()
+				.build();
+
+			const iniciarConexion = async () => {
+				if (connection.state === signalR.HubConnectionState.Connected || connection.state === signalR.HubConnectionState.Connecting) {
+					return;
+				}
+
+				try {
+					await connection.start();
+					await connection.invoke("JoinMeserosGroup");
+					window.dispatchEvent(new Event("pedidos:hubListo"));
+				} catch (error) {
+					console.error("No se pudo conectar con PedidosHub:", error);
+					setTimeout(iniciarConexion, 3000);
+				}
+			};
+
+			window.pedidosHubClient = {
+				connection,
+				ensureStarted: iniciarConexion
+			};
+
+			connection.on("ActualizarPedidos", () => window.dispatchEvent(new CustomEvent("pedidos:actualizar")));
+			connection.on("EstadoActualizado", data => window.dispatchEvent(new CustomEvent("pedidos:estadoActualizado", { detail: data })));
+			connection.on("PedidoEnviado", data => window.dispatchEvent(new CustomEvent("pedidos:pedidoEnviado", { detail: data })));
+
+			connection.onreconnected(() => window.dispatchEvent(new Event("pedidos:hubListo")));
+
+			document.addEventListener("DOMContentLoaded", () => {
+				if (obtenerToken()) {
+					iniciarConexion();
+				}
+			});
+		})();
+
+		document.addEventListener("DOMContentLoaded", mostrarNombreUsuario);
+	</script>
 </body>
 </html>
