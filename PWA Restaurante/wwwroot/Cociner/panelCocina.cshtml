@@ -23,346 +23,275 @@
         <p class="empty-state">Sin órdenes listas.</p>
     </div>
 </div>
-<!-- Modal de Detalles de Pedido -->
+
+<!-- ✅ MODAL DETALLES -->
 <div id="overlayDetalles" class="overlay-cocina" style="display:none;">
     <div class="modal-cocina">
-        <header class="modal-header warm">
+        <header class="modal-header">
             <h1 id="tituloOrden">📋 Detalles de Orden</h1>
             <button class="close" onclick="cerrarModalDetalles()">✕</button>
         </header>
 
-        <div class="modal-body warm-body">
+        <div class="modal-body">
             <div id="cargandoDetalle" class="loading warm-loading">Cargando detalles...</div>
 
             <div id="contenidoDetalle" style="display:none;">
-                <div class="info-principal warm-info">
+                <div class="warm-info">
                     <div class="columna">
-                        <p><strong>🪑 Mesa</strong><br><span id="numMesaDetalle"></span></p>
-                        <p><strong>👨‍🍳 Mesero</strong><br><span id="nombreMeseroDetalle"></span></p>
+                        <p><strong>Mesa</strong><br><span id="numMesaDetalle"></span></p>
+                        <p><strong>Mesero</strong><br><span id="nombreMeseroDetalle"></span></p>
                     </div>
 
                     <div class="columna">
-                        <p><strong>🕒 Hora</strong><br><span id="fechaHoraDetalle"></span></p>
+                        <p><strong>Hora</strong><br><span id="fechaHoraDetalle"></span></p>
                         <p><strong>Estado</strong><br><span id="estadoDetalle"></span></p>
-                    </div>
-
-                    <div class="notas warm-notas">
-                        <label>Notas</label><br>
-                        <textarea id="notasDetalle" rows="3" readonly></textarea>
                     </div>
                 </div>
 
-                <h3 class="warm-subtitle">Productos</h3>
+                <label>Notas</label>
+                <textarea id="notasDetalle" rows="3" readonly></textarea>
+
+                <h3>Productos</h3>
                 <div id="listaProductosDetalle"></div>
 
-                <div class="total-container warm-total">
-                    <span>Total:</span>
-                    <strong id="totalDetalle">$0.00</strong>
+                <div class="total">
+                    Total: <strong id="totalDetalle">$0.00</strong>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const state = {
-                pedidos: {
-                    nuevos: [],
-                    preparacion: [],
-                    listos: []
-                },
-                cargaInicial: true
-            };
+<script>
 
-            const ui = {
-                columnas: {
-                    nuevos: {
-                        titulo: document.getElementById('tituloNuevos'),
-                        contenedor: document.getElementById('listaNuevos')
-                    },
-                    preparacion: {
-                        titulo: document.getElementById('tituloPreparacion'),
-                        contenedor: document.getElementById('listaPreparacion')
-                    },
-                    listos: {
-                        titulo: document.getElementById('tituloListos'),
-                        contenedor: document.getElementById('listaListos')
+    /* ====================================================================
+       INICIALIZACIÓN
+    ====================================================================*/
+
+    document.addEventListener('DOMContentLoaded', () => {
+
+        const state = {
+            pedidos: { nuevos: [], preparacion: [], listos: [] }
+        };
+
+        const ui = {
+            columnas: {
+                nuevos: { titulo: document.getElementById("tituloNuevos"), contenedor: document.getElementById("listaNuevos") },
+                preparacion: { titulo: document.getElementById("tituloPreparacion"), contenedor: document.getElementById("listaPreparacion") },
+                listos: { titulo: document.getElementById("tituloListos"), contenedor: document.getElementById("listaListos") }
+            }
+        };
+
+        init();
+
+        function init() {
+            cargarPedidos();
+        }
+
+        /* ====================================================================
+           CARGA DE PEDIDOS
+        ====================================================================*/
+
+        async function cargarPedidos() {
+            try {
+                const [nuevos, preparacion, listos] = await Promise.all([
+                    fetchPedidos('/api/Cocina/Enviados'),
+                    fetchPedidos('/api/Cocina/EnPreparacion'),
+                    fetchPedidos('/api/Cocina/Listo')
+                ]);
+
+                state.pedidos.nuevos = nuevos;
+                state.pedidos.preparacion = preparacion;
+                state.pedidos.listos = listos;
+
+                renderColumnas();
+            }
+            catch (e) { console.error(e); }
+        }
+
+        async function fetchPedidos(url) {
+            const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+
+            const response = await fetch(url, {
+                headers: token ? { "Authorization": "Bearer " + token } : {}
+            });
+
+            const data = await response.json();
+            return data.map(p => ({
+                id: p.id,
+                numMesa: p.numMesa,
+                tomadoEn: p.tomadoEn,
+                precioTotal: p.precioTotal,
+                estado: p.estado,
+                usuario: p.usuarioNombre
+            }));
+        }
+
+        /* ====================================================================
+           RENDER DE COLUMNAS
+        ====================================================================*/
+
+        function renderColumnas() {
+            renderColumna(ui.columnas.nuevos, state.pedidos.nuevos, "nuevos");
+            renderColumna(ui.columnas.preparacion, state.pedidos.preparacion, "preparacion");
+            renderColumna(ui.columnas.listos, state.pedidos.listos, "listos");
+        }
+
+        function renderColumna(col, pedidos, tipo) {
+
+            col.titulo.textContent =
+                (tipo === "nuevos" ? "🟦 Nuevos" :
+                 tipo === "preparacion" ? "🟧 En Preparación" :
+                                           "🟩 Listos") +
+                ` (${pedidos.length})`;
+
+            col.contenedor.innerHTML = "";
+
+            pedidos.forEach(p => col.contenedor.appendChild(crearTarjetaPedido(p, tipo)));
+        }
+
+        /* ====================================================================
+           TARJETA DE PEDIDO (INCLUYE BOTONES ✔ VERDE Y 🗑 ROJO)
+        ====================================================================*/
+
+        function crearTarjetaPedido(pedido, tipo) {
+
+            const card = document.createElement("div");
+            card.className = "order";
+
+            card.innerHTML = `
+                <h4>Mesa ${pedido.numMesa}</h4>
+                <p>Orden #${pedido.id}</p>
+                <p style="color:red">⏰ ${formatearHora(pedido.tomadoEn)}</p>
+                <p>Tomado por: ${pedido.usuario}</p>
+                <p class="price">$${pedido.precioTotal.toFixed(2)}</p>
+            `;
+
+            const botones = document.createElement("div");
+            botones.className = "order-buttons";
+
+            /* ✅ BOTÓN VER */
+            const btnVer = document.createElement("button");
+            btnVer.className = "btn-ver";
+            btnVer.textContent = "👁 Ver";
+            btnVer.onclick = () => abrirModalDetalles(pedido.id);
+            botones.appendChild(btnVer);
+
+            /* ✅ BOTÓN VERDE (COMENZAR / LISTO) */
+            if (tipo !== "listos") {
+                const btnListo = document.createElement("button");
+                btnListo.className = "btn-comenzar";
+                btnListo.textContent = tipo === "nuevos" ? "✔ Comenzar" : "✔ Listo";
+                btnListo.onclick = () => actualizarEstadoPedido(pedido.id, btnListo);
+                botones.appendChild(btnListo);
+            }
+
+            /* ✅ BOTÓN ROJO ELIMINAR SOLO EN LISTOS */
+            if (tipo === "listos") {
+                const btnEliminar = document.createElement("button");
+                btnEliminar.className = "btn-eliminar";
+                btnEliminar.textContent = "🗑 Eliminar";
+                btnEliminar.onclick = async () => {
+                    if (confirm("¿Eliminar esta orden?")) {
+                        await eliminarPedido(pedido.id);
                     }
-                }
-            };
-
-            init();
-
-            const manejarEventosTiempoReal = () => {
-                cargarPedidos();
-            };
-
-            window.addEventListener('pedidos:hubListo', manejarEventosTiempoReal);
-            window.addEventListener('pedidos:pedidoEnviado', manejarEventosTiempoReal);
-            window.addEventListener('pedidos:actualizar', manejarEventosTiempoReal);
-            window.addEventListener('pedidos:estadoActualizado', manejarEventosTiempoReal);
-
-            if (window.pedidosHubClient?.ensureStarted) {
-                window.pedidosHubClient.ensureStarted();
-            }
-
-            function init() {
-                const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-                const usuario = JSON.parse(sessionStorage.getItem('usuario') || localStorage.getItem('usuario') || '{}');
-
-                if (!token || (usuario?.rol ?? '').toLowerCase() !== 'cocinero') {
-                    alert('Acceso no autorizado. Inicia sesión como cocinero.');
-                    window.location.href = '/';
-                    return;
-                }
-
-                cargarPedidos();
-            }
-
-            async function cargarPedidos() {
-                mostrarEstadoCarga(true);
-                try {
-                    const [nuevos, preparacion, listos] = await Promise.all([
-                        fetchPedidos('/api/Cocina/Enviados'),
-                        fetchPedidos('/api/Cocina/EnPreparacion'),
-                        fetchPedidos('/api/Cocina/Listo')
-                    ]);
-
-                    state.pedidos.nuevos = nuevos;
-                    state.pedidos.preparacion = preparacion;
-                    state.pedidos.listos = listos;
-
-                    renderColumnas();
-                } catch (error) {
-                    console.error('Error al cargar pedidos:', error);
-                    alert(error?.message || 'No se pudieron cargar los pedidos.');
-                } finally {
-                    mostrarEstadoCarga(false);
-                }
-            }
-
-            function mostrarEstadoCarga(mostrando) {
-                if (!mostrando) return;
-                Object.values(ui.columnas).forEach(({ contenedor }) => {
-                    contenedor.innerHTML = '<p class="empty-state">Cargando pedidos...</p>';
-                });
-            }
-
-            async function fetchPedidos(url) {
-                const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-                const headers = { 'Content-Type': 'application/json' };
-                if (token) headers['Authorization'] = `Bearer ${token}`;
-
-                const response = await fetch(url, { headers });
-                const isJson = (response.headers.get('content-type') || '').includes('application/json');
-                const body = isJson ? await response.json().catch(() => null) : await response.text().catch(() => '');
-
-                if (!response.ok) {
-                    const message = Array.isArray(body)
-                        ? body.join(', ')
-                        : (body?.message || (typeof body === 'string' && body.trim()) || `Error ${response.status}`);
-                    throw new Error(message);
-                }
-
-                if (!Array.isArray(body)) return [];
-                return body.map(normalizarPedido);
-            }
-
-            function normalizarPedido(data = {}) {
-                return {
-                    id: data.id ?? data.Id ?? 0,
-                    numMesa: data.numMesa ?? data.NumMesa ?? '—',
-                    tomadoEn: data.tomadoEn ?? data.TomadoEn ?? null,
-                    precioTotal: Number(data.precioTotal ?? data.PrecioTotal ?? 0),
-                    estado: data.estado ?? data.Estado ?? '',
-                    usuario: data.usuarioNombre ?? data.UsuarioNombre ?? '—'
                 };
+                botones.appendChild(btnEliminar);
             }
 
-            function renderColumnas() {
-                renderColumna(ui.columnas.nuevos, state.pedidos.nuevos, 'nuevos');
-                renderColumna(ui.columnas.preparacion, state.pedidos.preparacion, 'preparacion');
-                renderColumna(ui.columnas.listos, state.pedidos.listos, 'listos');
-            }
+            card.appendChild(botones);
+            return card;
+        }
 
-            function renderColumna(columnaUi, pedidos, tipo) {
-                if (!columnaUi) return;
-                const { titulo, contenedor } = columnaUi;
+        /* ====================================================================
+           ELIMINAR PEDIDO
+        ====================================================================*/
 
-                if (titulo) {
-                    const encabezado = tipo === 'nuevos'
-                        ? '🟦 Nuevos'
-                        : tipo === 'preparacion'
-                            ? '🟧 En Preparación'
-                            : '🟩 Listos';
-                    titulo.textContent = `${encabezado} (${pedidos.length})`;
-                }
+        async function eliminarPedido(id) {
+            const token = localStorage.getItem("token") || sessionStorage.getItem("token");
 
-                contenedor.innerHTML = '';
-                if (!pedidos.length) {
-                    const vacio = document.createElement('p');
-                    vacio.className = 'empty-state';
-                    vacio.textContent = tipo === 'nuevos'
-                        ? 'Sin órdenes nuevas.'
-                        : tipo === 'preparacion'
-                            ? 'Sin órdenes en preparación.'
-                            : 'Sin órdenes listas.';
-                    contenedor.appendChild(vacio);
-                    return;
-                }
+            await fetch(`/api/Cocina/Eliminar/${id}`, {
+                method: "DELETE",
+                headers: token ? { "Authorization": "Bearer " + token } : {}
+            });
 
-                const fragment = document.createDocumentFragment();
-                pedidos.forEach(pedido => {
-                    fragment.appendChild(crearTarjetaPedido(pedido, tipo));
-                });
-                contenedor.appendChild(fragment);
-            }
+            cargarPedidos();
+        }
 
-            function crearTarjetaPedido(pedido, tipo) {
-                const card = document.createElement('div');
-                card.className = 'order';
-                card.dataset.pedidoId = pedido.id;
+        /* ====================================================================
+           ACTUALIZAR ESTADO (COMENZAR / LISTO)
+        ====================================================================*/
 
-                card.innerHTML = `
-                    <h4>Mesa ${pedido.numMesa}</h4>
-                    <p>Orden #${pedido.id}</p>
-                    <p style="color:red;">⏰ ${formatearHora(pedido.tomadoEn)}</p>
-                    <p>Tomado por: ${escapeHtml(pedido.usuario)}</p>
-                    <p class="price">$${pedido.precioTotal.toFixed(2)}</p>
+        async function actualizarEstadoPedido(id, btn) {
+
+            btn.disabled = true;
+            btn.textContent = "Actualizando…";
+
+            const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+
+            await fetch(`/api/Cocina/ActualizarEstado/${id}`, {
+                method: "PUT",
+                headers: token ? { "Authorization": "Bearer " + token } : {}
+            });
+
+            cargarPedidos();
+        }
+
+        /* ====================================================================
+           MODAL DETALLES
+        ====================================================================*/
+
+        async function abrirModalDetalles(id) {
+
+            overlayDetalles.style.display = "flex";
+            cargandoDetalle.style.display = "block";
+            contenidoDetalle.style.display = "none";
+
+            const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+
+            const response = await fetch(`/api/Pedidos/VerDetalles/${id}`, {
+                headers: token ? { "Authorization": "Bearer " + token } : {}
+            });
+
+            const data = await response.json();
+
+            document.getElementById("tituloOrden").textContent = `Detalles de Orden #${data.id}`;
+            document.getElementById("numMesaDetalle").textContent = data.numMesa;
+            document.getElementById("nombreMeseroDetalle").textContent = data.usuarioNombre;
+            document.getElementById("fechaHoraDetalle").textContent = new Date(data.tomadoEn).toLocaleString();
+            document.getElementById("estadoDetalle").textContent = data.estado;
+            document.getElementById("notasDetalle").value = data.notasEspeciales || "Sin notas";
+
+            listaProductosDetalle.innerHTML = "";
+            data.detalles.forEach(d => {
+                listaProductosDetalle.innerHTML += `
+                    <div class="warm-producto">
+                        <div>
+                            <p class="nombre">${d.nombreProducto}</p>
+                            <p>Cantidad: ${d.cantidad}</p>
+                        </div>
+                        <div class="precio">
+                            <p>$${d.subtotal.toFixed(2)}</p>
+                            <small>Unitario: $${d.precioUnitario.toFixed(2)}</small>
+                        </div>
+                    </div>
                 `;
+            });
 
-                const botones = document.createElement('div');
-                botones.className = 'order-buttons';
+            totalDetalle.textContent = "$" + data.precioTotal.toFixed(2);
 
-                const btnVer = document.createElement('button');
-                btnVer.className = 'btn-ver';
-                btnVer.type = 'button';
-                btnVer.textContent = '👁 Ver';
-    btnVer.addEventListener('click', () => abrirModalDetalles(pedido.id));
-                    botones.appendChild(btnVer);
+            cargandoDetalle.style.display = "none";
+            contenidoDetalle.style.display = "block";
+        }
 
-                if (tipo !== 'listos') {
-                    const btnAccion = document.createElement('button');
-                    btnAccion.className = 'btn-comenzar';
-                    btnAccion.type = 'button';
-                    btnAccion.textContent = tipo === 'nuevos' ? '✔ Comenzar' : '✔ Listo';
-                    btnAccion.addEventListener('click', () => actualizarEstadoPedido(pedido.id, btnAccion));
-                    botones.appendChild(btnAccion);
-                }
+        function cerrarModalDetalles() {
+            overlayDetalles.style.display = "none";
+        }
 
-                card.appendChild(botones);
-                return card;
-            }
+        function formatearHora(f) {
+            return new Date(f).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+        }
 
-            async function actualizarEstadoPedido(id, boton) {
-                if (!id) return;
-                const textoOriginal = boton.textContent;
-                boton.disabled = true;
-                boton.textContent = 'Actualizando...';
+    });
 
-                try {
-                    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-                    const headers = { 'Content-Type': 'application/json' };
-                    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-                    const response = await fetch(`/api/Cocina/ActualizarEstado/${id}`, {
-                        method: 'PUT',
-                        headers
-                    });
-
-                    const isJson = (response.headers.get('content-type') || '').includes('application/json');
-                    const body = isJson ? await response.json().catch(() => null) : await response.text().catch(() => '');
-
-                    if (!response.ok) {
-                        const message = Array.isArray(body)
-                            ? body.join(', ')
-                            : (body?.message || (typeof body === 'string' && body.trim()) || `Error ${response.status}`);
-                        throw new Error(message);
-                    }
-
-                    await cargarPedidos();
-                } catch (error) {
-                    console.error('Error al actualizar estado:', error);
-                    alert(error?.message || 'No se pudo actualizar el estado del pedido.');
-                } finally {
-                    boton.disabled = false;
-                    boton.textContent = textoOriginal;
-                }
-            }
-
-            function formatearHora(fechaIso) {
-                if (!fechaIso) return '—';
-                const fecha = new Date(fechaIso);
-                if (Number.isNaN(fecha.getTime())) return '—';
-                return fecha.toLocaleTimeString('es-ES', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-            }
-
-            function escapeHtml(str = '') {
-                return String(str)
-                    .replace(/&/g, '&amp;')
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;')
-                    .replace(/"/g, '&quot;')
-                    .replace(/'/g, '&#39;');
-            }
-        });async function abrirModalDetalles(idPedido) {
-  const overlay = document.getElementById('overlayDetalles');
-  const cargando = document.getElementById('cargandoDetalle');
-  const contenido = document.getElementById('contenidoDetalle');
-  overlay.style.display = 'flex';
-  cargando.style.display = 'block';
-  contenido.style.display = 'none';
-
-  try {
-    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    const response = await fetch(`/api/Pedidos/VerDetalles/${idPedido}`, { headers });
-    const data = await response.json();
-
-    renderDetallePedido(data);
-  } catch (error) {
-    cargando.textContent = 'No se pudieron cargar los detalles.';
-  } finally {
-    cargando.style.display = 'none';
-    contenido.style.display = 'block';
-  }
-}
-
-function cerrarModalDetalles() {
-  document.getElementById('overlayDetalles').style.display = 'none';
-}
-
-function renderDetallePedido(data) {
-  document.getElementById('tituloOrden').textContent = `Detalles de Orden #${data.id}`;
-  document.getElementById('numMesaDetalle').textContent = data.numMesa;
-  document.getElementById('nombreMeseroDetalle').textContent = data.usuarioNombre || '—';
-  document.getElementById('fechaHoraDetalle').textContent = new Date(data.tomadoEn).toLocaleString('es-MX');
-  document.getElementById('estadoDetalle').textContent = data.estado;
-  document.getElementById('notasDetalle').value = data.notasEspeciales || 'Sin notas';
-  document.getElementById('totalDetalle').textContent = `$${data.precioTotal.toFixed(2)}`;
-
-  const contenedor = document.getElementById('listaProductosDetalle');
-  contenedor.innerHTML = '';
-  (data.detalles || []).forEach(p => {
-    const div = document.createElement('div');
-    div.className = 'warm-producto';
-    div.innerHTML = `
-      <div>
-        <p class="nombre">${p.nombreProducto}</p>
-        <p>Cantidad: ${p.cantidad}</p>
-      </div>
-      <div class="precio">
-        <p>$${p.subtotal.toFixed(2)}</p>
-        <small>Unitario: $${p.precioUnitario.toFixed(2)}</small>
-      </div>`;
-    contenedor.appendChild(div);
-  });
-}
-
-    </script>
-
+</script>

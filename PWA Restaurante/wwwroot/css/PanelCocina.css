@@ -365,3 +365,32 @@ body {
     margin-top: 10px;
     color: #2e8b57;
 }
+
+/* ===== BOTÓN ELIMINAR ===== */
+.btn-eliminar {
+    background-color: #d9534f; /* rojo cálido */
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+    .btn-eliminar:hover {
+        background-color: #c9302c; /* tono más oscuro al pasar el mouse */
+        transform: scale(1.05);
+    }
+
+    .btn-eliminar:active {
+        background-color: #ac2925; /* aún más oscuro al presionar */
+        transform: scale(0.98);
+    }
+
+    .btn-eliminar:disabled {
+        background-color: #f0b3b0;
+        cursor: not-allowed;
+        transform: none;
+    }
