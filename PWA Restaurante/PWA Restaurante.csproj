@@ -30,6 +30,7 @@
     <Folder Include="wwwroot\Admin\Shared\" />
     <Folder Include="wwwroot\Cociner\Controllers\" />
     <Folder Include="wwwroot\Mesero\Controllers\" />
+    <Folder Include="wwwroot\Mesero\AjustMesero\" />
   </ItemGroup>
 
   <ItemGroup>
