@@ -209,6 +209,54 @@ namespace PWA_Restaurante.Controllers
 			return Ok(pedidos);
 		}
 
-	
+		[HttpGet("VerDetalles/{id}")]
+		public IActionResult VerDetallesPedido(int id)
+		{
+			try
+			{
+				var pedido = _pedidoRepository.GetById(id);
+
+				if (pedido == null)
+				{
+					return NotFound("Pedido no encontrado");
+				}
+
+				var usuario = _usuarioRepository.GetById(pedido.UsuarioId);
+
+				var detalles = _detalleRepository.GetQueryable()
+					.Where(d => d.PedidoId == id)
+					.Join(_productoRepository.GetQueryable(),
+						d => d.ProductoId,
+						p => p.Id,
+						(d, p) => new PedidoDetalleDTO
+						{
+							Id = d.Id,
+							NombreProducto = p.Nombre,
+							Cantidad = d.Cantidad,
+							PrecioUnitario = d.PrecioUnitario,
+							Subtotal = d.Cantidad * d.PrecioUnitario
+						})
+					.ToList();
+
+				var pedidoCompleto = new PedidoDetalleCompletoDTO
+				{
+					Id = pedido.Id,
+					NumMesa = pedido.NumMesa,
+					NotasEspeciales = pedido.NotasEspeciales,
+					UsuarioNombre = usuario?.Nombre ?? "Usuario no encontrado",
+					TomadoEn = pedido.TomadoEn,
+					Estado = pedido.Estado,
+					PrecioTotal = pedido.PrecioTotal,
+					Detalles = detalles
+				};
+
+				return Ok(pedidoCompleto);
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { message = "Error interno del servidor", error = ex.Message });
+			}
+		}
+
 	}
 }

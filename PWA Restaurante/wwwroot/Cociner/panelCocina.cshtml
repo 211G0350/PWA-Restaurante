@@ -24,7 +24,6 @@
     </div>
 </div>
 
-<!-- ✅ MODAL DETALLES -->
 <div id="overlayDetalles" class="overlay-cocina" style="display:none;">
     <div class="modal-cocina">
         <header class="modal-header">
@@ -63,36 +62,77 @@
 </div>
 
 <script>
-
-    /* ====================================================================
-       INICIALIZACIÓN
-    ====================================================================*/
-
     document.addEventListener('DOMContentLoaded', () => {
-
         const state = {
-            pedidos: { nuevos: [], preparacion: [], listos: [] }
+            pedidos: {
+                nuevos: [],
+                preparacion: [],
+                listos: []
+            },
+            cargaInicial: true
         };
 
         const ui = {
             columnas: {
-                nuevos: { titulo: document.getElementById("tituloNuevos"), contenedor: document.getElementById("listaNuevos") },
-                preparacion: { titulo: document.getElementById("tituloPreparacion"), contenedor: document.getElementById("listaPreparacion") },
-                listos: { titulo: document.getElementById("tituloListos"), contenedor: document.getElementById("listaListos") }
+                nuevos: {
+                    titulo: document.getElementById('tituloNuevos'),
+                    contenedor: document.getElementById('listaNuevos')
+                },
+                preparacion: {
+                    titulo: document.getElementById('tituloPreparacion'),
+                    contenedor: document.getElementById('listaPreparacion')
+                },
+                listos: {
+                    titulo: document.getElementById('tituloListos'),
+                    contenedor: document.getElementById('listaListos')
+                }
+            },
+            modal: {
+                overlay: document.getElementById('overlayDetalles'),
+                cargando: document.getElementById('cargandoDetalle'),
+                contenido: document.getElementById('contenidoDetalle'),
+                titulo: document.getElementById('tituloOrden'),
+                numMesa: document.getElementById('numMesaDetalle'),
+                mesero: document.getElementById('nombreMeseroDetalle'),
+                fecha: document.getElementById('fechaHoraDetalle'),
+                estado: document.getElementById('estadoDetalle'),
+                notas: document.getElementById('notasDetalle'),
+                total: document.getElementById('totalDetalle'),
+                productos: document.getElementById('listaProductosDetalle')
             }
         };
 
         init();
 
+        const manejarEventosTiempoReal = () => cargarPedidos();
+
+        window.addEventListener('pedidos:hubListo', manejarEventosTiempoReal);
+        window.addEventListener('pedidos:pedidoEnviado', manejarEventosTiempoReal);
+        window.addEventListener('pedidos:actualizar', manejarEventosTiempoReal);
+        window.addEventListener('pedidos:estadoActualizado', manejarEventosTiempoReal);
+
+        if (window.pedidosHubClient?.ensureStarted) {
+            window.pedidosHubClient.ensureStarted();
+        }
+
         function init() {
+            const token = obtenerToken();
+            const usuario = obtenerUsuario();
+
+            if (!token || (usuario?.rol ?? '').toLowerCase() !== 'cocinero') {
+                alert('Acceso no autorizado. Inicia sesión como cocinero.');
+                window.location.href = '/';
+                return;
+            }
+
             cargarPedidos();
         }
 
-        /* ====================================================================
-           CARGA DE PEDIDOS
-        ====================================================================*/
-
         async function cargarPedidos() {
+            if (state.cargaInicial) {
+                mostrarEstadoCarga(true);
+            }
+
             try {
                 const [nuevos, preparacion, listos] = await Promise.all([
                     fetchPedidos('/api/Cocina/Enviados'),
@@ -105,97 +145,140 @@
                 state.pedidos.listos = listos;
 
                 renderColumnas();
+            } catch (error) {
+                console.error('Error al cargar pedidos:', error);
+                alert(error?.message || 'No se pudieron cargar los pedidos.');
+            } finally {
+                state.cargaInicial = false;
+                mostrarEstadoCarga(false);
             }
-            catch (e) { console.error(e); }
+        }
+
+        function mostrarEstadoCarga(mostrando) {
+            if (!mostrando) {
+                return;
+            }
+
+            Object.values(ui.columnas).forEach(({ contenedor }) => {
+                contenedor.innerHTML = '<p class="empty-state">Cargando pedidos...</p>';
+            });
         }
 
         async function fetchPedidos(url) {
-            const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+            const token = obtenerToken();
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
 
-            const response = await fetch(url, {
-                headers: token ? { "Authorization": "Bearer " + token } : {}
-            });
+            const response = await fetch(url, { headers });
+            const isJson = (response.headers.get('content-type') || '').includes('application/json');
+            const body = isJson ? await response.json().catch(() => null) : await response.text().catch(() => '');
 
-            const data = await response.json();
-            return data.map(p => ({
-                id: p.id,
-                numMesa: p.numMesa,
-                tomadoEn: p.tomadoEn,
-                precioTotal: p.precioTotal,
-                estado: p.estado,
-                usuario: p.usuarioNombre
-            }));
+            if (!response.ok) {
+                const message = Array.isArray(body)
+                    ? body.join(', ')
+                    : (body?.message || (typeof body === 'string' && body.trim()) || `Error ${response.status}`);
+                throw new Error(message);
+            }
+
+            if (!Array.isArray(body)) {
+                return [];
+            }
+
+            return body.map(normalizarPedido);
         }
 
-        /* ====================================================================
-           RENDER DE COLUMNAS
-        ====================================================================*/
+        function normalizarPedido(data = {}) {
+            return {
+                id: data.id ?? data.Id ?? 0,
+                numMesa: data.numMesa ?? data.NumMesa ?? '—',
+                tomadoEn: data.tomadoEn ?? data.TomadoEn ?? null,
+                precioTotal: Number(data.precioTotal ?? data.PrecioTotal ?? 0),
+                estado: data.estado ?? data.Estado ?? '',
+                usuario: data.usuarioNombre ?? data.UsuarioNombre ?? '—'
+            };
+        }
 
         function renderColumnas() {
-            renderColumna(ui.columnas.nuevos, state.pedidos.nuevos, "nuevos");
-            renderColumna(ui.columnas.preparacion, state.pedidos.preparacion, "preparacion");
-            renderColumna(ui.columnas.listos, state.pedidos.listos, "listos");
+            renderColumna(ui.columnas.nuevos, state.pedidos.nuevos, 'nuevos');
+            renderColumna(ui.columnas.preparacion, state.pedidos.preparacion, 'preparacion');
+            renderColumna(ui.columnas.listos, state.pedidos.listos, 'listos');
         }
 
-        function renderColumna(col, pedidos, tipo) {
+        function renderColumna(columnaUi, pedidos, tipo) {
+            if (!columnaUi) {
+                return;
+            }
 
-            col.titulo.textContent =
-                (tipo === "nuevos" ? "🟦 Nuevos" :
-                 tipo === "preparacion" ? "🟧 En Preparación" :
-                                           "🟩 Listos") +
-                ` (${pedidos.length})`;
+            const { titulo, contenedor } = columnaUi;
 
-            col.contenedor.innerHTML = "";
+            if (titulo) {
+                const encabezado = tipo === 'nuevos'
+                    ? '🟦 Nuevos'
+                    : tipo === 'preparacion'
+                        ? '🟧 En Preparación'
+                        : '🟩 Listos';
+                titulo.textContent = `${encabezado} (${pedidos.length})`;
+            }
 
-            pedidos.forEach(p => col.contenedor.appendChild(crearTarjetaPedido(p, tipo)));
+            contenedor.innerHTML = '';
+            if (!pedidos.length) {
+                const vacio = document.createElement('p');
+                vacio.className = 'empty-state';
+                vacio.textContent = tipo === 'nuevos'
+                    ? 'Sin órdenes nuevas.'
+                    : tipo === 'preparacion'
+                        ? 'Sin órdenes en preparación.'
+                        : 'Sin órdenes listas.';
+                contenedor.appendChild(vacio);
+                return;
+            }
+
+            const fragment = document.createDocumentFragment();
+            pedidos.forEach(pedido => {
+                fragment.appendChild(crearTarjetaPedido(pedido, tipo));
+            });
+            contenedor.appendChild(fragment);
         }
-
-        /* ====================================================================
-           TARJETA DE PEDIDO (INCLUYE BOTONES ✔ VERDE Y 🗑 ROJO)
-        ====================================================================*/
 
         function crearTarjetaPedido(pedido, tipo) {
-
-            const card = document.createElement("div");
-            card.className = "order";
+            const card = document.createElement('div');
+            card.className = 'order';
+            card.dataset.pedidoId = pedido.id;
 
             card.innerHTML = `
                 <h4>Mesa ${pedido.numMesa}</h4>
                 <p>Orden #${pedido.id}</p>
-                <p style="color:red">⏰ ${formatearHora(pedido.tomadoEn)}</p>
-                <p>Tomado por: ${pedido.usuario}</p>
+                <p style="color:red;">⏰ ${formatearHora(pedido.tomadoEn)}</p>
+                <p>Tomado por: ${escapeHtml(pedido.usuario)}</p>
                 <p class="price">$${pedido.precioTotal.toFixed(2)}</p>
             `;
 
-            const botones = document.createElement("div");
-            botones.className = "order-buttons";
+            const botones = document.createElement('div');
+            botones.className = 'order-buttons';
 
-            /* ✅ BOTÓN VER */
-            const btnVer = document.createElement("button");
-            btnVer.className = "btn-ver";
-            btnVer.textContent = "👁 Ver";
-            btnVer.onclick = () => abrirModalDetalles(pedido.id);
+            const btnVer = document.createElement('button');
+            btnVer.className = 'btn-ver';
+            btnVer.type = 'button';
+            btnVer.textContent = '👁 Ver';
+            btnVer.addEventListener('click', () => abrirModalDetalles(pedido.id));
             botones.appendChild(btnVer);
 
-            /* ✅ BOTÓN VERDE (COMENZAR / LISTO) */
-            if (tipo !== "listos") {
-                const btnListo = document.createElement("button");
-                btnListo.className = "btn-comenzar";
-                btnListo.textContent = tipo === "nuevos" ? "✔ Comenzar" : "✔ Listo";
-                btnListo.onclick = () => actualizarEstadoPedido(pedido.id, btnListo);
-                botones.appendChild(btnListo);
-            }
-
-            /* ✅ BOTÓN ROJO ELIMINAR SOLO EN LISTOS */
-            if (tipo === "listos") {
-                const btnEliminar = document.createElement("button");
-                btnEliminar.className = "btn-eliminar";
-                btnEliminar.textContent = "🗑 Eliminar";
-                btnEliminar.onclick = async () => {
-                    if (confirm("¿Eliminar esta orden?")) {
-                        await eliminarPedido(pedido.id);
-                    }
-                };
+            if (tipo !== 'listos') {
+                const btnAccion = document.createElement('button');
+                btnAccion.className = 'btn-comenzar';
+                btnAccion.type = 'button';
+                btnAccion.textContent = tipo === 'nuevos' ? '✔ Comenzar' : '✔ Listo';
+                btnAccion.addEventListener('click', () => actualizarEstadoPedido(pedido.id, btnAccion));
+                botones.appendChild(btnAccion);
+            } else {
+                const btnEliminar = document.createElement('button');
+                btnEliminar.className = 'btn-eliminar';
+                btnEliminar.type = 'button';
+                btnEliminar.textContent = '🗑 Eliminar';
+                btnEliminar.disabled = true;
+                btnEliminar.title = 'Pendiente de implementación';
                 botones.appendChild(btnEliminar);
             }
 
@@ -203,95 +286,220 @@
             return card;
         }
 
-        /* ====================================================================
-           ELIMINAR PEDIDO
-        ====================================================================*/
+        async function actualizarEstadoPedido(id, boton) {
+            if (!id) {
+                return;
+            }
 
-        async function eliminarPedido(id) {
-            const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+            const textoOriginal = boton.textContent;
+            boton.disabled = true;
+            boton.textContent = 'Actualizando...';
 
-            await fetch(`/api/Cocina/Eliminar/${id}`, {
-                method: "DELETE",
-                headers: token ? { "Authorization": "Bearer " + token } : {}
-            });
+            try {
+                const token = obtenerToken();
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
 
-            cargarPedidos();
+                const response = await fetch(`/api/Cocina/ActualizarEstado/${id}`, {
+                    method: 'PUT',
+                    headers
+                });
+
+                const isJson = (response.headers.get('content-type') || '').includes('application/json');
+                const body = isJson ? await response.json().catch(() => null) : await response.text().catch(() => '');
+
+                if (!response.ok) {
+                    const message = Array.isArray(body)
+                        ? body.join(', ')
+                        : (body?.message || (typeof body === 'string' && body.trim()) || `Error ${response.status}`);
+                    throw new Error(message);
+                }
+
+                await cargarPedidos();
+            } catch (error) {
+                console.error('Error al actualizar estado:', error);
+                alert(error?.message || 'No se pudo actualizar el estado del pedido.');
+            } finally {
+                boton.disabled = false;
+                boton.textContent = textoOriginal;
+            }
         }
 
-        /* ====================================================================
-           ACTUALIZAR ESTADO (COMENZAR / LISTO)
-        ====================================================================*/
+        async function abrirModalDetalles(idPedido) {
+            if (!idPedido || !ui.modal.overlay) {
+                return;
+            }
 
-        async function actualizarEstadoPedido(id, btn) {
+            ui.modal.overlay.style.display = 'flex';
+            ui.modal.cargando.style.display = 'block';
+            ui.modal.contenido.style.display = 'none';
 
-            btn.disabled = true;
-            btn.textContent = "Actualizando…";
-
-            const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-
-            await fetch(`/api/Cocina/ActualizarEstado/${id}`, {
-                method: "PUT",
-                headers: token ? { "Authorization": "Bearer " + token } : {}
-            });
-
-            cargarPedidos();
+            try {
+                const data = await fetchDetallePedido(idPedido);
+                renderDetallePedido(data);
+            } catch (error) {
+                console.error('No se pudieron cargar los detalles del pedido:', error);
+                ui.modal.cargando.textContent = error?.message || 'No se pudieron cargar los detalles.';
+            } finally {
+                ui.modal.cargando.style.display = 'none';
+                ui.modal.contenido.style.display = 'block';
+            }
         }
 
-        /* ====================================================================
-           MODAL DETALLES
-        ====================================================================*/
+        async function fetchDetallePedido(idPedido) {
+            const token = obtenerToken();
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
 
-        async function abrirModalDetalles(id) {
+            const response = await fetch(`/api/Cocina/VerDetalles/${idPedido}`, { headers });
+            const isJson = (response.headers.get('content-type') || '').includes('application/json');
+            const body = isJson ? await response.json().catch(() => null) : await response.text().catch(() => '');
 
-            overlayDetalles.style.display = "flex";
-            cargandoDetalle.style.display = "block";
-            contenidoDetalle.style.display = "none";
+            if (!response.ok) {
+                const message = Array.isArray(body)
+                    ? body.join(', ')
+                    : (body?.message || (typeof body === 'string' && body.trim()) || `Error ${response.status}`);
+                throw new Error(message);
+            }
 
-            const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+            return normalizarDetallePedido(body);
+        }
 
-            const response = await fetch(`/api/Pedidos/VerDetalles/${id}`, {
-                headers: token ? { "Authorization": "Bearer " + token } : {}
-            });
+        function normalizarDetallePedido(data = {}) {
+            const detalles = (data.detalles ?? data.Detalles ?? []).map(detalle => ({
+                nombre: detalle.nombreProducto ?? detalle.NombreProducto ?? 'Producto sin nombre',
+                cantidad: Number(detalle.cantidad ?? detalle.Cantidad ?? 0),
+                precioUnitario: Number(detalle.precioUnitario ?? detalle.PrecioUnitario ?? 0),
+                subtotal: Number(detalle.subtotal ?? detalle.Subtotal ?? 0)
+            }));
 
-            const data = await response.json();
+            return {
+                id: data.id ?? data.Id ?? 0,
+                numMesa: data.numMesa ?? data.NumMesa ?? '—',
+                mesero: data.usuarioNombre ?? data.UsuarioNombre ?? '—',
+                tomadoEn: data.tomadoEn ?? data.TomadoEn ?? null,
+                estado: data.estado ?? data.Estado ?? '—',
+                notas: data.notasEspeciales ?? data.NotasEspeciales ?? '',
+                precioTotal: Number(data.precioTotal ?? data.PrecioTotal ?? 0),
+                detalles
+            };
+        }
 
-            document.getElementById("tituloOrden").textContent = `Detalles de Orden #${data.id}`;
-            document.getElementById("numMesaDetalle").textContent = data.numMesa;
-            document.getElementById("nombreMeseroDetalle").textContent = data.usuarioNombre;
-            document.getElementById("fechaHoraDetalle").textContent = new Date(data.tomadoEn).toLocaleString();
-            document.getElementById("estadoDetalle").textContent = data.estado;
-            document.getElementById("notasDetalle").value = data.notasEspeciales || "Sin notas";
+        function renderDetallePedido(pedido) {
+            if (!pedido || !ui.modal) {
+                return;
+            }
 
-            listaProductosDetalle.innerHTML = "";
-            data.detalles.forEach(d => {
-                listaProductosDetalle.innerHTML += `
-                    <div class="warm-producto">
-                        <div>
-                            <p class="nombre">${d.nombreProducto}</p>
-                            <p>Cantidad: ${d.cantidad}</p>
-                        </div>
-                        <div class="precio">
-                            <p>$${d.subtotal.toFixed(2)}</p>
-                            <small>Unitario: $${d.precioUnitario.toFixed(2)}</small>
-                        </div>
+            ui.modal.titulo.textContent = `Detalles de Orden #${pedido.id}`;
+            ui.modal.numMesa.textContent = pedido.numMesa;
+            ui.modal.mesero.textContent = pedido.mesero;
+            ui.modal.fecha.textContent = pedido.tomadoEn ? formatearFechaCompleta(pedido.tomadoEn) : '—';
+            ui.modal.estado.textContent = pedido.estado;
+            ui.modal.notas.value = pedido.notas || 'Sin notas especiales';
+            ui.modal.total.textContent = `$${pedido.precioTotal.toFixed(2)}`;
+
+            renderProductosDetalle(pedido.detalles);
+        }
+
+        function renderProductosDetalle(detalles = []) {
+            if (!ui.modal.productos) {
+                return;
+            }
+
+            ui.modal.productos.innerHTML = '';
+            if (!detalles.length) {
+                ui.modal.productos.innerHTML = '<p class="warm-empty">Esta orden no contiene productos.</p>';
+                return;
+            }
+
+            const fragment = document.createDocumentFragment();
+            detalles.forEach(detalle => {
+                const producto = document.createElement('div');
+                producto.className = 'warm-producto';
+
+                producto.innerHTML = `
+                    <div>
+                        <p class="nombre">${escapeHtml(detalle.nombre)}</p>
+                        <p>Cantidad: ${detalle.cantidad}</p>
+                    </div>
+                    <div class="precio">
+                        <p>$${detalle.subtotal.toFixed(2)}</p>
+                        <small>Unitario: $${detalle.precioUnitario.toFixed(2)}</small>
                     </div>
                 `;
+
+                fragment.appendChild(producto);
             });
 
-            totalDetalle.textContent = "$" + data.precioTotal.toFixed(2);
-
-            cargandoDetalle.style.display = "none";
-            contenidoDetalle.style.display = "block";
+            ui.modal.productos.appendChild(fragment);
         }
 
         function cerrarModalDetalles() {
-            overlayDetalles.style.display = "none";
+            if (ui.modal?.overlay) {
+                ui.modal.overlay.style.display = 'none';
+            }
         }
 
-        function formatearHora(f) {
-            return new Date(f).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+        window.cerrarModalDetalles = cerrarModalDetalles;
+
+        function obtenerToken() {
+            return sessionStorage.getItem('token') || localStorage.getItem('token') || '';
         }
 
+        function obtenerUsuario() {
+            const parseUsuario = (valor) => {
+                if (!valor) {
+                    return null;
+                }
+                try {
+                    return JSON.parse(valor);
+                } catch {
+                    return null;
+                }
+            };
+
+            return parseUsuario(sessionStorage.getItem('usuario')) ?? parseUsuario(localStorage.getItem('usuario'));
+        }
+
+        function formatearHora(fechaIso) {
+            if (!fechaIso) {
+                return '—';
+            }
+            const fecha = new Date(fechaIso);
+            if (Number.isNaN(fecha.getTime())) {
+                return '—';
+            }
+            return fecha.toLocaleTimeString('es-ES', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function formatearFechaCompleta(valor) {
+            const fecha = new Date(valor);
+            if (Number.isNaN(fecha.getTime())) {
+                return '—';
+            }
+            return fecha.toLocaleString('es-ES', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function escapeHtml(str = '') {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
     });
-
 </script>
