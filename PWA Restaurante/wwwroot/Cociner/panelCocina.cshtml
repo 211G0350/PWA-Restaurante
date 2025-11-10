@@ -23,6 +23,46 @@
         <p class="empty-state">Sin órdenes listas.</p>
     </div>
 </div>
+<!-- Modal de Detalles de Pedido -->
+<div id="overlayDetalles" class="overlay-cocina" style="display:none;">
+    <div class="modal-cocina">
+        <header class="modal-header warm">
+            <h1 id="tituloOrden">📋 Detalles de Orden</h1>
+            <button class="close" onclick="cerrarModalDetalles()">✕</button>
+        </header>
+
+        <div class="modal-body warm-body">
+            <div id="cargandoDetalle" class="loading warm-loading">Cargando detalles...</div>
+
+            <div id="contenidoDetalle" style="display:none;">
+                <div class="info-principal warm-info">
+                    <div class="columna">
+                        <p><strong>🪑 Mesa</strong><br><span id="numMesaDetalle"></span></p>
+                        <p><strong>👨‍🍳 Mesero</strong><br><span id="nombreMeseroDetalle"></span></p>
+                    </div>
+
+                    <div class="columna">
+                        <p><strong>🕒 Hora</strong><br><span id="fechaHoraDetalle"></span></p>
+                        <p><strong>Estado</strong><br><span id="estadoDetalle"></span></p>
+                    </div>
+
+                    <div class="notas warm-notas">
+                        <label>Notas</label><br>
+                        <textarea id="notasDetalle" rows="3" readonly></textarea>
+                    </div>
+                </div>
+
+                <h3 class="warm-subtitle">Productos</h3>
+                <div id="listaProductosDetalle"></div>
+
+                <div class="total-container warm-total">
+                    <span>Total:</span>
+                    <strong id="totalDetalle">$0.00</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -199,8 +239,8 @@
                 btnVer.className = 'btn-ver';
                 btnVer.type = 'button';
                 btnVer.textContent = '👁 Ver';
-                btnVer.onclick = null;
-                botones.appendChild(btnVer);
+    btnVer.addEventListener('click', () => abrirModalDetalles(pedido.id));
+                    botones.appendChild(btnVer);
 
                 if (tipo !== 'listos') {
                     const btnAccion = document.createElement('button');
@@ -269,6 +309,60 @@
                     .replace(/"/g, '&quot;')
                     .replace(/'/g, '&#39;');
             }
-        });
+        });async function abrirModalDetalles(idPedido) {
+  const overlay = document.getElementById('overlayDetalles');
+  const cargando = document.getElementById('cargandoDetalle');
+  const contenido = document.getElementById('contenidoDetalle');
+  overlay.style.display = 'flex';
+  cargando.style.display = 'block';
+  contenido.style.display = 'none';
+
+  try {
+    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await fetch(`/api/Pedidos/VerDetalles/${idPedido}`, { headers });
+    const data = await response.json();
+
+    renderDetallePedido(data);
+  } catch (error) {
+    cargando.textContent = 'No se pudieron cargar los detalles.';
+  } finally {
+    cargando.style.display = 'none';
+    contenido.style.display = 'block';
+  }
+}
+
+function cerrarModalDetalles() {
+  document.getElementById('overlayDetalles').style.display = 'none';
+}
+
+function renderDetallePedido(data) {
+  document.getElementById('tituloOrden').textContent = `Detalles de Orden #${data.id}`;
+  document.getElementById('numMesaDetalle').textContent = data.numMesa;
+  document.getElementById('nombreMeseroDetalle').textContent = data.usuarioNombre || '—';
+  document.getElementById('fechaHoraDetalle').textContent = new Date(data.tomadoEn).toLocaleString('es-MX');
+  document.getElementById('estadoDetalle').textContent = data.estado;
+  document.getElementById('notasDetalle').value = data.notasEspeciales || 'Sin notas';
+  document.getElementById('totalDetalle').textContent = `$${data.precioTotal.toFixed(2)}`;
+
+  const contenedor = document.getElementById('listaProductosDetalle');
+  contenedor.innerHTML = '';
+  (data.detalles || []).forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'warm-producto';
+    div.innerHTML = `
+      <div>
+        <p class="nombre">${p.nombreProducto}</p>
+        <p>Cantidad: ${p.cantidad}</p>
+      </div>
+      <div class="precio">
+        <p>$${p.subtotal.toFixed(2)}</p>
+        <small>Unitario: $${p.precioUnitario.toFixed(2)}</small>
+      </div>`;
+    contenedor.appendChild(div);
+  });
+}
+
     </script>
 
