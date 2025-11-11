@@ -71,6 +71,7 @@
 
             pedidos.forEach(pedido => {
                 const id = pedido.Id || pedido.id;
+                const estado = (pedido.Estado || pedido.estado || '').toLowerCase();
                 container.innerHTML += `
                     <div class="order-card">
                         <div class="order-header">
@@ -81,18 +82,19 @@
                         </div>
                         <div class="order-body">
                             <p class="time">${formatearFecha(pedido.TomadoEn || pedido.tomadoEn)}</p>
-                            <p class="price">$${(pedido.PrecioTotal || pedido.precioTotal).toFixed(2)}</p>
+                            <p class="price">$${Number(pedido.PrecioTotal || pedido.precioTotal || 0).toFixed(2)}</p>
                         </div>
                         <div class="order-actions">
                             <button class="details-btn" onclick="verDetalles(${id})">
                                 <i class="fa-regular fa-eye"></i> Ver Detalles
                             </button>
+                            ${estado === 'pendiente' ? `
                             <button class="details-btn" style="background-color:#f2b13e;" onclick="editarPedido(${id})">
                                 <i class="fa-solid fa-pen"></i> Editar
                             </button>
                             <button class="details-btn" style="background-color:#d9534f; color:white;" onclick="eliminarPedido(${id})">
                                 <i class="fa-solid fa-trash"></i> Eliminar
-                            </button>
+                            </button>` : ''}
                         </div>
                     </div>`;
             });
@@ -123,6 +125,8 @@
 
             pedidos.forEach(pedido => {
                 const id = pedido.Id || pedido.id;
+                const estado = (pedido.Estado || pedido.estado || '').toLowerCase();
+                const puedeGestionar = estado === 'pendiente';
                 container.innerHTML += `
                     <div class="order-card">
                         <div class="order-header">
@@ -133,18 +137,19 @@
                         </div>
                         <div class="order-body">
                             <p class="time">${formatearFecha(pedido.TomadoEn || pedido.tomadoEn)}</p>
-                            <p class="price">$${(pedido.PrecioTotal || pedido.precioTotal).toFixed(2)}</p>
+                            <p class="price">$${Number(pedido.PrecioTotal || pedido.precioTotal || 0).toFixed(2)}</p>
                         </div>
                         <div class="order-actions">
                             <button class="details-btn" onclick="verDetalles(${id})">
                                 <i class="fa-regular fa-eye"></i> Ver Detalles
                             </button>
+                            ${puedeGestionar ? `
                             <button class="details-btn" style="background-color:#f2b13e;" onclick="editarPedido(${id})">
                                 <i class="fa-solid fa-pen"></i> Editar
                             </button>
                             <button class="details-btn" style="background-color:#d9534f; color:white;" onclick="eliminarPedido(${id})">
                                 <i class="fa-solid fa-trash"></i> Eliminar
-                            </button>
+                            </button>` : ''}
                         </div>
                     </div>`;
             });
@@ -159,12 +164,10 @@
     }
 
     function editarPedido(id) {
-        // 🔗 Redirige a la vista EditarPendiente
         window.location.href = `/Mesero/EditarPendiente/${id}`;
     }
 
     function eliminarPedido(id) {
-        // 🔗 Redirige a la vista EliminarPendiente
         window.location.href = `/Mesero/EliminarPendiente/${id}`;
     }
 

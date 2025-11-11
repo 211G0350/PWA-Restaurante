@@ -17,7 +17,6 @@
                 <p><strong>Notas:</strong> <span id="notasOrden"></span></p>
                 <div style="margin-top:25px;">
                     <button class="btn warm-btn-main" id="confirmarEliminar">Eliminar</button>
-                    <button class="btn" style="background:#ccc; margin-left:10px;" onclick="window.location.href='/Mesero/panelMesero'">Cancelar</button>
                 </div>
             </section>
         </div>
@@ -39,12 +38,22 @@
             const resp = await fetch(`/api/Pedidos/ObtenerPorId/${pedidoId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+
+            if (!resp.ok) {
+                const error = await resp.json().catch(() => ({}));
+                throw new Error(error.message || 'No se pudo cargar la orden');
+            }
+
             const pedido = await resp.json();
 
-            document.getElementById('numMesa').textContent = pedido.numMesa;
+            if ((pedido.estado || '').toLowerCase() !== 'pendiente') {
+                throw new Error('Solo se pueden cancelar pedidos pendientes');
+            }
+
+            document.getElementById('numMesa').textContent = pedido.numMesa ?? '—';
             document.getElementById('notasOrden').textContent = pedido.notasEspeciales || "(sin notas)";
         } catch (err) {
-            alert("Error al cargar la orden");
+            alert(err.message || "Error al cargar la orden");
             window.location.href = '/Mesero/panelMesero';
         }
 
@@ -52,19 +61,22 @@
             if (!confirm("¿Seguro que desea eliminar esta orden?")) return;
 
             try {
-                const resp = await fetch(`/api/Pedidos/Eliminar/${pedidoId}`, {
+                const resp = await fetch(`/api/Pedidos/CancelarPedido/${pedidoId}`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
 
-                if (!resp.ok) throw new Error("Error al eliminar la orden");
+                if (!resp.ok) {
+                    const error = await resp.json().catch(() => ({}));
+                    throw new Error(error.message || "Error al eliminar la orden");
+                }
 
                 alert("Orden eliminada correctamente");
                 window.location.href = '/Mesero/panelMesero';
             } catch (err) {
-                alert(err.message);
+                alert(err.message || "Error al eliminar la orden");
             }
         });
 

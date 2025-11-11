@@ -54,17 +54,26 @@
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
     const pedidoId = obtenerIdDeUrl();
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
 
     const ui = {
-        numMesa: document.getElementById('numMesaInput'),
-        notas: document.getElementById('notasInput'),
-        total: document.getElementById('totalAmount'),
+        tabs: document.getElementById('categoriaTabs'),
+        grid: document.getElementById('productosGrid'),
         resumen: document.getElementById('resumenItems'),
-        btnGuardar: document.getElementById('editarOrdenBtn')
+        total: document.getElementById('totalAmount'),
+        btnGuardar: document.getElementById('editarOrdenBtn'),
+        numMesa: document.getElementById('numMesaInput'),
+        notas: document.getElementById('notasInput')
     };
 
-    const state = { pedido: new Map() };
+    const state = {
+        categorias: [],
+        categoriaActiva: null,
+        cacheProductos: new Map(),
+        productosPorId: new Map(),
+        pedido: new Map(),
+        botonesPorProducto: new Map(),
+        usuarioId: null
+    };
 
     if (!pedidoId) {
         alert("ID de pedido no válido");
@@ -72,96 +81,457 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    await cargarPedido();
+    try {
+        await cargarPedido();
+        await cargarCategorias();
+        renderResumen();
+        prepararEventos();
+        validarGuardar();
+    } catch (error) {
+        console.error('Error inicializando edición:', error);
+        alert(error?.message || 'No se pudo cargar la información de la orden.');
+        window.location.href = '/Mesero/panelMesero';
+    }
+
+    function prepararEventos() {
+        ui.btnGuardar?.addEventListener('click', guardarCambios);
+        ui.numMesa?.addEventListener('input', validarGuardar);
+    }
+
+    function getAuthToken() {
+        return localStorage.getItem('token') || sessionStorage.getItem('token');
+    }
+
+    async function fetchWithAuth(url, options = {}) {
+        const headers = {
+            'Content-Type': 'application/json',
+            ...(options.headers || {})
+        };
+
+        const token = getAuthToken();
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(url, { ...options, headers });
+        const contentType = response.headers.get('content-type') || '';
+        const isJson = contentType.includes('application/json');
+        const body = isJson ? await response.json().catch(() => null) : await response.text().catch(() => '');
+
+        if (!response.ok) {
+            const message = Array.isArray(body)
+                ? body.join(', ')
+                : (body?.message || (typeof body === 'string' && body.trim()) || `Error ${response.status}`);
+            throw new Error(message);
+        }
+
+        return body;
+    }
+
+    function escapeHtml(str = '') {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
 
     async function cargarPedido() {
+        const token = getAuthToken();
         try {
-            const resp = await fetch(`/api/Pedidos/ObtenerPorId/${pedidoId}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+            const response = await fetch(`/api/Pedidos/ObtenerPorId/${pedidoId}`, {
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
             });
-            const pedido = await resp.json();
 
-            ui.numMesa.value = pedido.numMesa;
-            ui.notas.value = pedido.notasEspeciales || "";
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.message || 'No se pudo cargar el pedido');
+            }
 
-            pedido.detalles.forEach(det => {
-                state.pedido.set(det.productoId, {
-                    id: det.productoId,
-                    nombre: det.productoNombre,
-                    precio: det.precioUnitario,
-                    cantidad: det.cantidad
+            const pedido = await response.json();
+            if ((pedido.estado || '').toLowerCase() !== 'pendiente') {
+                throw new Error('Solo se pueden editar pedidos pendientes');
+            }
+
+            state.usuarioId = pedido.usuarioId;
+            ui.numMesa.value = pedido.numMesa ?? '';
+            ui.notas.value = pedido.notasEspeciales || '';
+
+            (pedido.detalles || []).forEach(det => {
+                const productoId = det.productoId ?? det.ProductoId;
+                if (!productoId) return;
+
+                const precio = Number(det.precioUnitario ?? det.PrecioUnitario ?? 0);
+                const cantidad = Math.max(1, Number(det.cantidad ?? det.Cantidad ?? 0));
+                const nombre = det.productoNombre ?? det.ProductoNombre ?? 'Producto';
+                const imagen = `/Img/${productoId}.jpg`;
+
+                state.productosPorId.set(productoId, {
+                    id: productoId,
+                    nombre,
+                    precio,
+                    imagen
+                });
+
+                state.pedido.set(productoId, {
+                    id: productoId,
+                    nombre,
+                    precio,
+                    imagen,
+                    cantidad
                 });
             });
 
             renderResumen();
-            ui.btnGuardar.disabled = false;
-        } catch (err) {
-            console.error("Error cargando pedido:", err);
-            alert("No se pudo cargar el pedido.");
-            window.location.href = '/Mesero/panelMesero';
+        } catch (error) {
+            throw error;
         }
     }
 
-    ui.btnGuardar.addEventListener('click', async () => {
-        const payload = {
-            id: pedidoId,
-            numMesa: Number(ui.numMesa.value),
-            notasEspeciales: ui.notas.value,
-            detalles: Array.from(state.pedido.values()).map(p => ({
-                productoId: p.id,
-                cantidad: p.cantidad,
-                precioUnitario: p.precio
-            }))
-        };
+    async function cargarCategorias() {
+        if (!ui.tabs) return;
+        ui.tabs.innerHTML = '<p class="loading-message">Cargando categorías...</p>';
 
         try {
-            const resp = await fetch(`/api/Pedidos/Actualizar/${pedidoId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(payload)
-            });
+            const categorias = await fetchWithAuth('/api/Productos/Categorias');
+            state.categorias = Array.isArray(categorias) ? categorias.filter(Boolean) : [];
 
-            if (!resp.ok) throw new Error("Error al guardar los cambios");
-            alert("Orden actualizada correctamente");
-            window.location.href = '/Mesero/panelMesero';
-        } catch (err) {
-            alert(err.message);
+            if (!state.categorias.length) {
+                ui.tabs.innerHTML = '<p class="empty-message">No hay categorías disponibles.</p>';
+                ui.grid.innerHTML = '<p class="empty-message">No hay productos para mostrar.</p>';
+                return;
+            }
+
+            renderTabs();
+            seleccionarTab(state.categorias[0]);
+        } catch (error) {
+            console.error('Error al cargar categorías:', error);
+            ui.tabs.innerHTML = `<p class="error-message">Error al cargar categorías: ${escapeHtml(error.message)}</p>`;
         }
-    });
+    }
 
-    function renderResumen() {
-        if (!state.pedido.size) {
-            ui.resumen.innerHTML = '<p class="empty-summary">No hay productos agregados.</p>';
-            ui.total.textContent = "$0.00";
+    function renderTabs() {
+        if (!ui.tabs) return;
+        ui.tabs.innerHTML = '';
+
+        state.categorias.forEach(categoria => {
+            const btn = document.createElement('button');
+            btn.className = 'tab';
+            btn.type = 'button';
+            btn.textContent = categoria;
+            btn.dataset.categoria = categoria;
+            btn.addEventListener('click', () => seleccionarTab(categoria));
+            ui.tabs.appendChild(btn);
+        });
+
+        marcarTabActiva(state.categoriaActiva);
+    }
+
+    async function seleccionarTab(categoria) {
+        if (!categoria || state.categoriaActiva === categoria) {
+            marcarTabActiva(categoria);
             return;
         }
 
-        let total = 0;
-        ui.resumen.innerHTML = Array.from(state.pedido.values()).map(p => {
-            const subtotal = p.precio * p.cantidad;
-            total += subtotal;
+        state.categoriaActiva = categoria;
+        marcarTabActiva(categoria);
+
+        if (state.cacheProductos.has(categoria)) {
+            renderProductos(state.cacheProductos.get(categoria));
+            return;
+        }
+
+        if (ui.grid) {
+            ui.grid.innerHTML = '<p class="loading-message">Cargando productos...</p>';
+        }
+
+        try {
+            const productos = await fetchWithAuth(`/api/Productos/PorCategoria/${encodeURIComponent(categoria)}`);
+            const lista = Array.isArray(productos) ? productos : [];
+            registrarProductos(lista);
+            state.cacheProductos.set(categoria, lista);
+            renderProductos(lista);
+        } catch (error) {
+            console.error('Error al cargar productos:', error);
+            if (ui.grid) {
+                ui.grid.innerHTML = `<p class="error-message">Error al obtener productos: ${escapeHtml(error.message)}</p>`;
+            }
+        }
+    }
+
+    function registrarProductos(productos = []) {
+        productos.forEach(producto => {
+            if (producto?.id == null) return;
+            state.productosPorId.set(producto.id, {
+                id: producto.id,
+                nombre: producto.nombre,
+                precio: typeof producto.precio === 'number' ? producto.precio : Number(producto.precio) || 0,
+                imagen: `/Img/${producto.id}.jpg`
+            });
+        });
+
+        state.pedido.forEach((item, productoId) => {
+            const info = state.productosPorId.get(productoId);
+            if (info) {
+                item.nombre = info.nombre;
+                item.precio = info.precio;
+                item.imagen = info.imagen;
+                state.pedido.set(productoId, item);
+            }
+        });
+
+        renderResumen();
+        sincronizarBotones();
+    }
+
+    function marcarTabActiva(categoria) {
+        if (!ui.tabs) return;
+        ui.tabs.querySelectorAll('.tab').forEach(tab => {
+            tab.classList.toggle('active', tab.dataset.categoria === categoria);
+        });
+    }
+
+    function renderProductos(productos = []) {
+        if (!ui.grid) return;
+
+        if (!productos.length) {
+            ui.grid.innerHTML = '<p class="empty-message">No hay productos en esta categoría.</p>';
+            return;
+        }
+
+        const cacheBuster = Date.now();
+        ui.grid.innerHTML = productos.map(producto => {
+            const nombre = escapeHtml(producto.nombre);
+            const descripcion = escapeHtml(producto.descripcion || '');
+            const categoria = escapeHtml(producto.categoria || '');
+            const precio = typeof producto.precio === 'number' ? producto.precio.toFixed(2) : '0.00';
+            const tiempo = typeof producto.tiempoPreparacion === 'number' ? `${producto.tiempoPreparacion} min` : '';
+            const imgSrc = `/Img/${producto.id}.jpg?v=${cacheBuster}`;
+            const seleccionado = state.pedido.has(producto.id);
+
             return `
-                <div class="order-item warm-item">
+                <article class="card warm-card" data-producto-id="${producto.id}">
+                    <div class="card-left">
+                        <h3 class="card-title">${nombre}</h3>
+                        ${descripcion ? `<p class="card-sub">${descripcion}</p>` : ''}
+                        <p class="card-cat">Categoría: ${categoria}</p>
+                        <p class="price">$${precio}</p>
+                        ${tiempo ? `<p class="time">⏱ ${tiempo}</p>` : ''}
+                        <button class="btn add warm-btn" data-producto-id="${producto.id}">${seleccionado ? 'Quitar' : 'Agregar'}</button>
+                    </div>
+                    <div class="card-right">
+                        <img src="${imgSrc}" alt="${nombre}" class="product-img" onerror="this.src='/Img/default.jpg';" />
+                    </div>
+                </article>
+            `;
+        }).join('');
+
+        state.botonesPorProducto.clear();
+        ui.grid.querySelectorAll('.btn.add').forEach(btn => {
+            const productoId = Number(btn.dataset.productoId);
+            state.botonesPorProducto.set(productoId, btn);
+            btn.addEventListener('click', () => toggleProductoEnPedido(productoId));
+        });
+
+        sincronizarBotones();
+    }
+
+    function toggleProductoEnPedido(productoId) {
+        if (typeof productoId === 'undefined' || productoId === null) return;
+        const producto = state.productosPorId.get(productoId);
+        if (!producto) return;
+
+        if (state.pedido.has(productoId)) {
+            state.pedido.delete(productoId);
+        } else {
+            state.pedido.set(productoId, {
+                id: producto.id,
+                nombre: producto.nombre,
+                precio: producto.precio,
+                imagen: producto.imagen,
+                cantidad: 1
+            });
+        }
+
+        renderResumen();
+        sincronizarBotones();
+    }
+
+    function renderResumen() {
+        if (!ui.resumen) return;
+
+        if (!state.pedido.size) {
+            ui.resumen.innerHTML = '<p class="empty-summary">No hay productos agregados.</p>';
+            actualizarTotal();
+            validarGuardar();
+            return;
+        }
+
+        const cacheBuster = Date.now();
+        ui.resumen.innerHTML = Array.from(state.pedido.values()).map(item => {
+            const subtotal = item.precio * item.cantidad;
+            const imagenBase = item.imagen || `/Img/${item.id}.jpg`;
+            const imagen = `${imagenBase.split('?')[0]}?v=${cacheBuster}`;
+
+            return `
+                <div class="order-item warm-item" data-producto-id="${item.id}">
                     <div class="item-left">
-                        <p class="item-title">${p.nombre}</p>
-                        <p class="item-qty">Cantidad: ${p.cantidad}</p>
+                        <p class="item-title">${escapeHtml(item.nombre)}</p>
+                        <p class="item-qty">Cantidad: <span class="qty-value">${item.cantidad}</span></p>
                     </div>
                     <div class="item-right">
                         <p class="item-price">Subtotal: $${subtotal.toFixed(2)}</p>
+                        <div class="qty-controls">
+                            <button class="circle warm-circle btn-restar" type="button">−</button>
+                            <button class="circle warm-circle btn-sumar" type="button">+</button>
+                        </div>
+                        <img src="${imagen}" alt="${escapeHtml(item.nombre)}" class="mini-product" onerror="this.src='/Img/default.jpg';" />
                     </div>
                 </div>
             `;
         }).join('');
 
-        ui.total.textContent = `$${total.toFixed(2)}`;
+        ui.resumen.querySelectorAll('.order-item').forEach(itemEl => {
+            const productoId = Number(itemEl.dataset.productoId);
+            const btnRestar = itemEl.querySelector('.btn-restar');
+            const btnSumar = itemEl.querySelector('.btn-sumar');
+
+            btnRestar?.addEventListener('click', () => ajustarCantidad(productoId, -1));
+            btnSumar?.addEventListener('click', () => ajustarCantidad(productoId, 1));
+        });
+
+        actualizarTotal();
+        validarGuardar();
+    }
+
+    function ajustarCantidad(productoId, delta) {
+        const item = state.pedido.get(productoId);
+        if (!item) return;
+
+        const nuevaCantidad = item.cantidad + delta;
+        if (nuevaCantidad < 1) {
+            state.pedido.delete(productoId);
+            renderResumen();
+            sincronizarBotones();
+            return;
+        }
+
+        if (nuevaCantidad > 99) {
+            return;
+        }
+
+        item.cantidad = nuevaCantidad;
+        state.pedido.set(productoId, item);
+        actualizarCantidadUI(productoId);
+        actualizarSubtotalUI(productoId);
+        actualizarTotal();
+        validarGuardar();
+    }
+
+    function actualizarCantidadUI(productoId) {
+        const itemEl = ui.resumen?.querySelector(`.order-item[data-producto-id="${productoId}"]`);
+        const cantidadSpan = itemEl?.querySelector('.qty-value');
+        const item = state.pedido.get(productoId);
+        if (cantidadSpan && item) {
+            cantidadSpan.textContent = item.cantidad;
+        }
+    }
+
+    function actualizarSubtotalUI(productoId) {
+        const itemEl = ui.resumen?.querySelector(`.order-item[data-producto-id="${productoId}"]`);
+        const priceEl = itemEl?.querySelector('.item-price');
+        const item = state.pedido.get(productoId);
+        if (priceEl && item) {
+            const subtotal = item.precio * item.cantidad;
+            priceEl.textContent = `Subtotal: $${subtotal.toFixed(2)}`;
+        }
+    }
+
+    function actualizarTotal() {
+        const total = Array.from(state.pedido.values())
+            .reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
+
+        if (ui.total) {
+            ui.total.textContent = `$${total.toFixed(2)}`;
+        }
+
+        return total;
+    }
+
+    function validarGuardar() {
+        if (!ui.btnGuardar) return;
+        const total = actualizarTotal();
+        const mesaValida = Number(ui.numMesa?.value) > 0;
+        const tieneProductos = state.pedido.size > 0;
+
+        ui.btnGuardar.disabled = !(mesaValida && tieneProductos && total > 0);
+    }
+
+    function sincronizarBotones() {
+        state.botonesPorProducto.forEach((btn, productoId) => {
+            if (!btn) return;
+            btn.textContent = state.pedido.has(productoId) ? 'Quitar' : 'Agregar';
+        });
+    }
+
+    async function guardarCambios() {
+        if (!state.usuarioId) {
+            alert("No se pudo determinar el usuario del pedido.");
+            return;
+        }
+
+        const numMesa = Number(ui.numMesa?.value);
+        if (!numMesa || numMesa < 1) {
+            alert('Por favor, ingresa un número de mesa válido.');
+            ui.numMesa?.focus();
+            return;
+        }
+
+        if (!state.pedido.size) {
+            alert('Agrega al menos un producto a la orden.');
+            return;
+        }
+
+        const detalles = Array.from(state.pedido.values()).map(item => ({
+            productoId: item.id,
+            cantidad: item.cantidad,
+            precioUnitario: item.precio
+        }));
+
+        const payload = {
+            id: pedidoId,
+            numMesa,
+            notasEspeciales: ui.notas?.value?.trim() || null,
+            usuarioId: state.usuarioId,
+            estado: 'pendiente',
+            detalles
+        };
+
+        try {
+            ui.btnGuardar.disabled = true;
+            ui.btnGuardar.textContent = 'Guardando...';
+
+            await fetchWithAuth('/api/Pedidos/EditarPedido', {
+                method: 'PUT',
+                body: JSON.stringify(payload)
+            });
+
+            alert('Orden actualizada correctamente.');
+            window.location.href = '/Mesero/panelMesero';
+        } catch (error) {
+            console.error('Error al guardar pedido:', error);
+            alert(error?.message || 'Ocurrió un error al guardar los cambios.');
+        } finally {
+            ui.btnGuardar.textContent = 'Guardar Cambios';
+            validarGuardar();
+        }
     }
 
     function obtenerIdDeUrl() {
-        const partes = window.location.pathname.split('/');
-        return parseInt(partes[partes.length - 1]) || null;
+        const partes = window.location.pathname.split('/').filter(Boolean);
+        const id = Number(partes[partes.length - 1]);
+        return Number.isFinite(id) ? id : null;
     }
 });
 </script>

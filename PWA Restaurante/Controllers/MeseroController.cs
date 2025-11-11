@@ -22,5 +22,19 @@ namespace PWA_Restaurante.Controllers
         {
             return View("~/wwwroot/Mesero/detalleordenDato.cshtml");
         }
+
+		[HttpGet("EditarPendiente/{id}")]
+		public IActionResult EditarPendiente(int id)
+		{
+			ViewData["PedidoId"] = id;
+			return View("~/wwwroot/Mesero/EditarPendiente.cshtml");
+		}
+
+		[HttpGet("EliminarPendiente/{id}")]
+		public IActionResult EliminarPendiente(int id)
+		{
+			ViewData["PedidoId"] = id;
+			return View("~/wwwroot/Mesero/EliminarPeniente.cshtml");
+		}
     }
 }

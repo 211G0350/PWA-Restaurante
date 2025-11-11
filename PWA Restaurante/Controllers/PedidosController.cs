@@ -91,6 +91,80 @@ namespace PWA_Restaurante.Controllers
 			return Ok(pedidos);
 		}
 
+		[HttpGet("ObtenerPorId/{id}")]
+		public IActionResult ObtenerPedidoPorId(int id)
+		{
+			try
+			{
+				var pedido = _pedidoRepository.GetById(id);
+
+				if (pedido == null)
+				{
+					return NotFound("Pedido no encontrado");
+				}
+
+				if (!string.Equals(pedido.Estado, "pendiente", StringComparison.OrdinalIgnoreCase))
+				{
+					return BadRequest("Solo se pueden gestionar pedidos con estado pendiente.");
+				}
+
+				var usuario = _usuarioRepository.GetById(pedido.UsuarioId);
+
+				var detalles = _detalleRepository.GetQueryable()
+					.Where(d => d.PedidoId == id)
+					.Join(_productoRepository.GetQueryable(),
+						d => d.ProductoId,
+						p => p.Id,
+						(d, p) => new PedidoDetalleDTO
+						{
+							Id = d.Id,
+							ProductoId = p.Id,
+							NombreProducto = p.Nombre,
+							Cantidad = d.Cantidad,
+							PrecioUnitario = d.PrecioUnitario,
+							Subtotal = d.Subtotal ?? (d.Cantidad * d.PrecioUnitario)
+						})
+					.ToList();
+
+				var pedidoDetalle = new PedidoDetalleCompletoDTO
+				{
+					Id = pedido.Id,
+					NumMesa = pedido.NumMesa,
+					NotasEspeciales = pedido.NotasEspeciales,
+					UsuarioNombre = usuario?.Nombre ?? "Usuario no encontrado",
+					TomadoEn = pedido.TomadoEn,
+					Estado = pedido.Estado,
+					PrecioTotal = pedido.PrecioTotal,
+					Detalles = detalles
+				};
+
+				return Ok(new
+				{
+					pedidoDetalle.Id,
+					pedidoDetalle.NumMesa,
+					pedidoDetalle.NotasEspeciales,
+					pedidoDetalle.UsuarioNombre,
+					pedido.UsuarioId,
+					pedidoDetalle.TomadoEn,
+					pedidoDetalle.Estado,
+					pedidoDetalle.PrecioTotal,
+					Detalles = pedidoDetalle.Detalles.Select(det => new
+					{
+						det.Id,
+						det.ProductoId,
+						ProductoNombre = det.NombreProducto,
+						det.Cantidad,
+						det.PrecioUnitario,
+						det.Subtotal
+					})
+				});
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { message = "Error interno del servidor", error = ex.Message });
+			}
+		}
+
 		[HttpGet("VerDetalles/{id}")]
 		public IActionResult VerDetallesPedido(int id)
 		{
@@ -113,10 +187,11 @@ namespace PWA_Restaurante.Controllers
 						(d, p) => new PedidoDetalleDTO
 						{
 							Id = d.Id,
+							ProductoId = p.Id,
 							NombreProducto = p.Nombre,
 							Cantidad = d.Cantidad,
 							PrecioUnitario = d.PrecioUnitario,
-							Subtotal = d.Cantidad * d.PrecioUnitario
+							Subtotal = d.Subtotal ?? (d.Cantidad * d.PrecioUnitario)
 						})
 					.ToList();
 
@@ -249,10 +324,9 @@ namespace PWA_Restaurante.Controllers
 				return NotFound("Pedido no encontrado");
 			}
 
-			// Solo podremos editar pedidos con estado "pendiente" o "Enviado"
-			if (pedidoExistente.Estado != "pendiente" && pedidoExistente.Estado != "enviado")
+			if (!string.Equals(pedidoExistente.Estado, "pendiente", StringComparison.OrdinalIgnoreCase))
 			{
-				return BadRequest("Un pedido iniciado ya no se puede editar");
+				return BadRequest("Solo se pueden editar pedidos con estado pendiente");
 			}
 
 			if (dto.Detalles == null || !dto.Detalles.Any())
@@ -281,7 +355,7 @@ namespace PWA_Restaurante.Controllers
 			pedidoExistente.NumMesa = dto.NumMesa;
 			pedidoExistente.NotasEspeciales = dto.NotasEspeciales;
 			pedidoExistente.UsuarioId = dto.UsuarioId;
-			pedidoExistente.Estado = dto.Estado;
+			pedidoExistente.Estado = "pendiente";
 			pedidoExistente.PrecioTotal = 0; 
 			decimal precioTotal = 0;
 			foreach (var detalleDto in dto.Detalles)
@@ -365,10 +439,9 @@ namespace PWA_Restaurante.Controllers
 				return NotFound("Pedido no encontrado");
 			}
 
-			// Solo se pueden cancelar pedidos con estado "pendiente" o "Enviado"
-			if (pedido.Estado != "pendiente" && pedido.Estado != "enviado")
+			if (!string.Equals(pedido.Estado, "pendiente", StringComparison.OrdinalIgnoreCase))
 			{
-				return BadRequest("No se pueden cancelar pedidos ya iniciados");
+				return BadRequest("Solo se pueden cancelar pedidos pendientes");
 			}
 
 			var pedidoParaCancelar = new CancelarPedidoDTO
@@ -391,9 +464,9 @@ namespace PWA_Restaurante.Controllers
 				return NotFound("Pedido no encontrado");
 			}
 
-			if (pedido.Estado != "pendiente" && pedido.Estado != "enviado")
+			if (!string.Equals(pedido.Estado, "pendiente", StringComparison.OrdinalIgnoreCase))
 			{
-				return BadRequest("No se pueden cancelar pedidos ya iniciados");
+				return BadRequest("Solo se pueden cancelar pedidos pendientes");
 			}
 
 			var detalles = _detalleRepository.GetAllWithTracking().Where(d => d.PedidoId == id).ToList();
