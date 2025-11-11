@@ -6,7 +6,7 @@
 <div class="overlay">
     <div class="modal warm-modal">
         <header class="modal-header">
-            <h1 id="tituloOrden">Detalles de Orden <span id="numOrden">#3</span></h1>
+            <h1 id="tituloOrden">Detalles de Orden <span id="numOrden">#—</span></h1>
             <button class="close" onclick="window.location.href='/Mesero/panelMesero'">✕</button>
         </header>
 
@@ -16,13 +16,13 @@
             <div id="contenidoPedido" style="display:none;">
                 <div class="info-principal">
                     <div class="columna">
-                        <p><strong>🪑 Mesa</strong><br><span id="numMesa">3</span></p>
-                        <p><strong>👨‍🍳 Mesero</strong><br><span id="nombreMesero">Leonardo</span></p>
+                        <p><strong>🪑 Mesa</strong><br><span id="numMesa">—</span></p>
+                        <p><strong>👨‍🍳 Mesero</strong><br><span id="nombreMesero">—</span></p>
                     </div>
 
                     <div class="columna">
-                        <p><strong>🕒 Hora</strong><br><span id="fechaHora">21/09/2025, 12:20</span></p>
-                        <p><strong>Estado</strong><br><span class="estado" id="estadoPedido">Recibido</span></p>
+                        <p><strong>🕒 Hora</strong><br><span id="fechaHora">—</span></p>
+                        <p><strong>Estado</strong><br><span class="estado" id="estadoPedido">—</span></p>
                     </div>
 
                     <div class="notas">
@@ -32,34 +32,11 @@
                 </div>
 
                 <h3 class="productos-titulo">Productos</h3>
-                <div id="listaProductos" class="productos-lista">
-                    <!-- Ejemplo de producto -->
-                    <div class="producto-item">
-                        <div>
-                            <p><strong>Café Americano</strong></p>
-                            <small>Cantidad: 1</small>
-                        </div>
-                        <div class="precio">
-                            <strong>$2.50</strong>
-                            <p>Precio unitario: $2.50</p>
-                        </div>
-                    </div>
-
-                    <div class="producto-item">
-                        <div>
-                            <p><strong>Refresco</strong></p>
-                            <small>Cantidad: 1</small>
-                        </div>
-                        <div class="precio">
-                            <strong>$2.00</strong>
-                            <p>Precio unitario: $2.00</p>
-                        </div>
-                    </div>
-                </div>
+                <div id="listaProductos" class="productos-lista"></div>
 
                 <div class="total-container">
                     <span>Total:</span>
-                    <strong id="totalPedido">$4.50</strong>
+                    <strong id="totalPedido">$0.00</strong>
                 </div>
             </div>
         </div>
@@ -76,7 +53,7 @@
         const ui = {
             cargando: document.getElementById('cargando'),
             contenedor: document.getElementById('contenidoPedido'),
-            titulo: document.getElementById('tituloOrden'),
+            tituloNumero: document.getElementById('numOrden'),
             mesa: document.getElementById('numMesa'),
             mesero: document.getElementById('nombreMesero'),
             fechaHora: document.getElementById('fechaHora'),
@@ -86,40 +63,17 @@
             productos: document.getElementById('listaProductos')
         };
 
-        init();
-
-        function init() {
-            if (!state.pedidoId) {
-                mostrarError('ID de pedido no válido.');
-                return;
-            }
-            cargarDetallesPedido();
+        if (!state.pedidoId) {
+            mostrarError('ID de pedido no válido.');
+            return;
         }
 
-        function getAuthToken() {
-            return sessionStorage.getItem('token') || localStorage.getItem('token');
-        }
-
-        async function fetchWithAuth(url, options = {}) {
-            const token = getAuthToken();
-            const headers = { 'Content-Type': 'application/json', ...options.headers };
-            if (token) headers['Authorization'] = `Bearer ${token}`;
-            const response = await fetch(url, { ...options, headers });
-            const isJson = (response.headers.get('content-type') || '').includes('application/json');
-            const body = isJson ? await response.json().catch(() => null) : await response.text().catch(() => '');
-            if (!response.ok) {
-                const message = Array.isArray(body)
-                    ? body.join(', ')
-                    : (body?.message || (typeof body === 'string' && body.trim()) || `Error ${response.status}`);
-                throw new Error(message);
-            }
-            return body;
-        }
+        cargarDetallesPedido();
 
         async function cargarDetallesPedido() {
             mostrarCargando(true);
             try {
-                const data = await fetchWithAuth(`/api/Pedidos/VerDetalles/${state.pedidoId}`);
+                const data = await fetchConToken(`/api/Pedidos/VerDetalles/${state.pedidoId}`);
                 state.pedido = normalizarPedido(data);
                 renderPedido();
             } catch (error) {
@@ -128,6 +82,32 @@
             } finally {
                 mostrarCargando(false);
             }
+        }
+
+        function getAuthToken() {
+            return sessionStorage.getItem('token') || localStorage.getItem('token');
+        }
+
+        async function fetchConToken(url, options = {}) {
+            const token = getAuthToken();
+            const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(url, { ...options, headers });
+            const contentType = response.headers.get('content-type') || '';
+            const isJson = contentType.includes('application/json');
+            const body = isJson ? await response.json().catch(() => null) : await response.text().catch(() => '');
+
+            if (!response.ok) {
+                const message = Array.isArray(body)
+                    ? body.join(', ')
+                    : (body?.message || (typeof body === 'string' && body.trim()) || `Error ${response.status}`);
+                throw new Error(message);
+            }
+
+            return body;
         }
 
         function normalizarPedido(data = {}) {
@@ -151,14 +131,16 @@
         }
 
         function renderPedido() {
-            if (!state.pedido) return;
+            if (!state.pedido) {
+                return;
+            }
 
-            ui.titulo.textContent = `Detalles de Orden #${state.pedido.id}`;
+            ui.tituloNumero.textContent = `#${state.pedido.id}`;
             ui.mesa.textContent = state.pedido.numMesa || '—';
             ui.mesero.textContent = state.pedido.mesero || '—';
             ui.fechaHora.textContent = state.pedido.tomadoEn ? formatearFecha(state.pedido.tomadoEn) : '—';
             ui.estado.textContent = state.pedido.estado || '—';
-            ui.notas.value = state.pedido.notas || 'Sin notas especiales';
+            ui.notas.value = (state.pedido.notas || '').trim() || 'Sin notas especiales';
             ui.total.textContent = `$${state.pedido.precioTotal.toFixed(2)}`;
 
             renderProductos(state.pedido.detalles);
@@ -166,7 +148,9 @@
         }
 
         function renderProductos(detalles = []) {
-            ui.productos.innerHTML = '';
+            if (!ui.productos) {
+                return;
+            }
 
             if (!detalles.length) {
                 ui.productos.innerHTML = '<p class="warm-empty">Esta orden no contiene productos.</p>';
@@ -177,35 +161,37 @@
             detalles.forEach(detalle => {
                 fragment.appendChild(crearProductoElemento(detalle));
             });
+            ui.productos.innerHTML = '';
             ui.productos.appendChild(fragment);
         }
 
         function crearProductoElemento(detalle) {
             const producto = document.createElement('div');
-            producto.className = 'producto warm-producto';
+            producto.className = 'producto-item';
 
-            const info = document.createElement('div');
-            info.className = 'detalles';
-            info.innerHTML = `
-                <p class="nombre">${escapeHtml(detalle.nombre)}</p>
-                <p class="cantidad">Cantidad: ${detalle.cantidad}</p>
+            const subtotal = detalle.subtotal ?? (detalle.precioUnitario * detalle.cantidad);
+
+            producto.innerHTML = `
+                <div>
+                    <p><strong>${escapeHtml(detalle.nombre)}</strong></p>
+                    <small>Cantidad: ${detalle.cantidad}</small>
+                </div>
+                <div class="precio">
+                    <strong>$${subtotal.toFixed(2)}</strong>
+                    <p>Precio unitario: $${detalle.precioUnitario.toFixed(2)}</p>
+                </div>
             `;
 
-            const precio = document.createElement('div');
-            precio.className = 'precio';
-            precio.innerHTML = `
-                <p class="total">$${detalle.subtotal.toFixed(2)}</p>
-                <p class="unitario">Unitario: $${detalle.precioUnitario.toFixed(2)}</p>
-            `;
-
-            producto.appendChild(info);
-            producto.appendChild(precio);
             return producto;
         }
 
         function mostrarCargando(mostrar) {
-            if (ui.cargando) ui.cargando.style.display = mostrar ? 'block' : 'none';
-            if (ui.contenedor && mostrar) ui.contenedor.style.display = 'none';
+            if (ui.cargando) {
+                ui.cargando.style.display = mostrar ? 'block' : 'none';
+            }
+            if (ui.contenedor) {
+                ui.contenedor.style.display = mostrar ? 'none' : 'block';
+            }
         }
 
         function mostrarError(mensaje) {

@@ -184,6 +184,7 @@
     window.addEventListener('pedidos:actualizar', actualizarListados);
     window.addEventListener('pedidos:estadoActualizado', actualizarListados);
     window.addEventListener('pedidos:pedidoEnviado', actualizarListados);
+    window.addEventListener('pedidos:listoEliminado', actualizarListados);
 
     document.addEventListener('DOMContentLoaded', () => {
         if (window.pedidosHubClient?.ensureStarted) {

@@ -258,5 +258,41 @@ namespace PWA_Restaurante.Controllers
 			}
 		}
 
+		[HttpDelete("EliminarListo/{id}")]
+		public async Task<IActionResult> EliminarListo(int id)
+		{
+			var pedido = _pedidoRepository.GetByIdWithTracking(id);
+			if (pedido == null)
+			{
+				return NotFound("Pedido no encontrado");
+			}
+
+			if (pedido.Estado != "listo")
+			{
+				return BadRequest("Solo se pueden eliminar pedidos con estado listo");
+			}
+
+			var detalles = _detalleRepository.GetAllWithTracking()
+				.Where(d => d.PedidoId == id)
+				.ToList();
+
+			foreach (var detalle in detalles)
+			{
+				_detalleRepository.Delete(detalle);
+			}
+
+			_pedidoRepository.Delete(pedido);
+
+			await _hubContext.Clients.All.SendAsync("ListoEliminado", new
+			{
+				pedidoId = pedido.Id,
+				numMesa = pedido.NumMesa
+			});
+
+			await _hubContext.Clients.All.SendAsync("ActualizarPedidos");
+
+			return Ok(new { message = "Pedido listo eliminado correctamente" });
+		}
+
 	}
 }

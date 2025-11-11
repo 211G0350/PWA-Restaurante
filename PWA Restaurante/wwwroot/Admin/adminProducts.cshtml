@@ -137,7 +137,17 @@
     document.addEventListener('DOMContentLoaded', init);
 
     function getAuthToken() {
-        return localStorage.getItem('token') || sessionStorage.getItem('token');
+        return sessionStorage.getItem('token') || localStorage.getItem('token');
+    }
+
+    function getAuthUser() {
+        const usuarioData = sessionStorage.getItem('usuario') || localStorage.getItem('usuario');
+        if (!usuarioData) return null;
+        try {
+            return JSON.parse(usuarioData);
+        } catch {
+            return null;
+        }
     }
 
     async function fetchWithAuth(url, options = {}) {
@@ -163,6 +173,12 @@
     }
 
     async function init() {
+        const usuario = getAuthUser();
+        if (!usuario || (usuario.rol || usuario.Rol || '').toLowerCase() !== 'admin') {
+            alert('No tienes permisos de administrador. Inicia sesión con un usuario administrador para gestionar productos.');
+            window.location.href = '/';
+            return;
+        }
         prepararBotonAgregar();
         prepararPreviewEdicion();
         prepararFormularioEdicion();

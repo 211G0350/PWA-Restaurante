@@ -127,6 +127,7 @@
 			connection.on("PedidoEnviado", data => window.dispatchEvent(new CustomEvent("pedidos:pedidoEnviado", { detail: data })));
 			connection.on("ActualizarPedidos", () => window.dispatchEvent(new CustomEvent("pedidos:actualizar")));
 			connection.on("EstadoActualizado", data => window.dispatchEvent(new CustomEvent("pedidos:estadoActualizado", { detail: data })));
+			connection.on("ListoEliminado", data => window.dispatchEvent(new CustomEvent("pedidos:listoEliminado", { detail: data })));
 
 			connection.onreconnected(() => window.dispatchEvent(new Event("pedidos:hubListo")));
 

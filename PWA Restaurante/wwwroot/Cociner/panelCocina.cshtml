@@ -110,6 +110,7 @@
         window.addEventListener('pedidos:pedidoEnviado', manejarEventosTiempoReal);
         window.addEventListener('pedidos:actualizar', manejarEventosTiempoReal);
         window.addEventListener('pedidos:estadoActualizado', manejarEventosTiempoReal);
+        window.addEventListener('pedidos:listoEliminado', manejarEventosTiempoReal);
 
         if (window.pedidosHubClient?.ensureStarted) {
             window.pedidosHubClient.ensureStarted();
@@ -277,8 +278,7 @@
                 btnEliminar.className = 'btn-eliminar';
                 btnEliminar.type = 'button';
                 btnEliminar.textContent = '🗑 Eliminar';
-                btnEliminar.disabled = true;
-                btnEliminar.title = 'Pendiente de implementación';
+                btnEliminar.addEventListener('click', () => eliminarPedidoListo(pedido.id, btnEliminar));
                 botones.appendChild(btnEliminar);
             }
 
@@ -321,6 +321,47 @@
             } catch (error) {
                 console.error('Error al actualizar estado:', error);
                 alert(error?.message || 'No se pudo actualizar el estado del pedido.');
+            } finally {
+                boton.disabled = false;
+                boton.textContent = textoOriginal;
+            }
+        }
+
+        async function eliminarPedidoListo(id, boton) {
+            if (!id) {
+                return;
+            }
+
+            const textoOriginal = boton.textContent;
+            boton.disabled = true;
+            boton.textContent = 'Eliminando...';
+
+            try {
+                const token = obtenerToken();
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const response = await fetch(`/api/Cocina/EliminarListo/${id}`, {
+                    method: 'DELETE',
+                    headers
+                });
+
+                const isJson = (response.headers.get('content-type') || '').includes('application/json');
+                const body = isJson ? await response.json().catch(() => null) : await response.text().catch(() => '');
+
+                if (!response.ok) {
+                    const message = Array.isArray(body)
+                        ? body.join(', ')
+                        : (body?.message || (typeof body === 'string' && body.trim()) || `Error ${response.status}`);
+                    throw new Error(message);
+                }
+
+                await cargarPedidos();
+            } catch (error) {
+                console.error('Error al eliminar pedido listo:', error);
+                alert(error?.message || 'No se pudo eliminar el pedido.');
             } finally {
                 boton.disabled = false;
                 boton.textContent = textoOriginal;

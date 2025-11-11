@@ -103,7 +103,7 @@ namespace PWA_Restaurante.Controllers
 					return NotFound("Pedido no encontrado");
 				}
 
-				if (!string.Equals(pedido.Estado, "pendiente", StringComparison.OrdinalIgnoreCase))
+				if (pedido.Estado != "pendiente")
 				{
 					return BadRequest("Solo se pueden gestionar pedidos con estado pendiente.");
 				}
@@ -324,7 +324,7 @@ namespace PWA_Restaurante.Controllers
 				return NotFound("Pedido no encontrado");
 			}
 
-			if (!string.Equals(pedidoExistente.Estado, "pendiente", StringComparison.OrdinalIgnoreCase))
+			if (pedidoExistente.Estado != "pendiente")
 			{
 				return BadRequest("Solo se pueden editar pedidos con estado pendiente");
 			}
@@ -439,7 +439,7 @@ namespace PWA_Restaurante.Controllers
 				return NotFound("Pedido no encontrado");
 			}
 
-			if (!string.Equals(pedido.Estado, "pendiente", StringComparison.OrdinalIgnoreCase))
+			if (pedido.Estado != "pendiente")
 			{
 				return BadRequest("Solo se pueden cancelar pedidos pendientes");
 			}
@@ -464,7 +464,7 @@ namespace PWA_Restaurante.Controllers
 				return NotFound("Pedido no encontrado");
 			}
 
-			if (!string.Equals(pedido.Estado, "pendiente", StringComparison.OrdinalIgnoreCase))
+			if (pedido.Estado != "pendiente")
 			{
 				return BadRequest("Solo se pueden cancelar pedidos pendientes");
 			}

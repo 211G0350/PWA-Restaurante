@@ -75,12 +75,28 @@
         init();
 
         async function init() {
+            const usuario = getAuthUser();
+            if (!usuario || (usuario.rol || usuario.Rol || '').toLowerCase() !== 'mesero') {
+                alert('No tienes permisos como mesero. Inicia sesión con un usuario mesero para crear órdenes.');
+                window.location.href = '/';
+                return;
+            }
             await cargarCategorias();
             prepararCrearPedido();
         }
 
         function getAuthToken() {
-            return localStorage.getItem('token') || sessionStorage.getItem('token');
+            return sessionStorage.getItem('token') || localStorage.getItem('token');
+        }
+
+        function getAuthUser() {
+            const data = sessionStorage.getItem('usuario') || localStorage.getItem('usuario');
+            if (!data) return null;
+            try {
+                return JSON.parse(data);
+            } catch {
+                return null;
+            }
         }
 
         async function fetchWithAuth(url, options = {}) {
@@ -380,7 +396,7 @@
                     return;
                 }
 
-                const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+                const usuario = getAuthUser() || {};
                 if (!usuario?.id) {
                     alert('No se encontró el usuario en la sesión. Por favor, inicia sesión nuevamente.');
                     window.location.href = '/';

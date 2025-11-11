@@ -94,6 +94,17 @@ namespace PWA_Restaurante.Services
 			});
 		}
 
+		public async Task NotificarListoEliminado(int pedidoId, int numMesa)
+		{
+			await Clients.All.SendAsync("ListoEliminado", new
+			{
+				pedidoId,
+				numMesa
+			});
+
+			await Clients.All.SendAsync("ActualizarPedidos");
+		}
+
 		public string GetConnectionId()
 		{
 			return Context.ConnectionId;
