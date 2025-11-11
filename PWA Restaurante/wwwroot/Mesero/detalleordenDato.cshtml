@@ -4,39 +4,62 @@
 }
 
 <div class="overlay">
-    <div class="modal">
-        <header class="modal-header warm">
-            <h1 id="tituloOrden">📋 Detalles de Orden</h1>
+    <div class="modal warm-modal">
+        <header class="modal-header">
+            <h1 id="tituloOrden">Detalles de Orden <span id="numOrden">#3</span></h1>
             <button class="close" onclick="window.location.href='/Mesero/panelMesero'">✕</button>
         </header>
 
-        <div class="modal-body warm-body">
-            <div id="cargando" class="loading warm-loading">Cargando detalles...</div>
+        <div class="modal-body">
+            <div id="cargando" class="loading">Cargando detalles...</div>
 
             <div id="contenidoPedido" style="display:none;">
-                <div class="info-principal warm-info">
+                <div class="info-principal">
                     <div class="columna">
-                        <p><strong>🪑 Mesa</strong><br><span id="numMesa"></span></p>
-                        <p><strong>👨‍🍳 Mesero</strong><br><span id="nombreMesero"></span></p>
+                        <p><strong>🪑 Mesa</strong><br><span id="numMesa">3</span></p>
+                        <p><strong>👨‍🍳 Mesero</strong><br><span id="nombreMesero">Leonardo</span></p>
                     </div>
 
                     <div class="columna">
-                        <p><strong>🕒 Hora</strong><br><span id="fechaHora"></span></p>
-                        <p><strong>Estado</strong><br><span class="estado" id="estadoPedido"></span></p>
+                        <p><strong>🕒 Hora</strong><br><span id="fechaHora">21/09/2025, 12:20</span></p>
+                        <p><strong>Estado</strong><br><span class="estado" id="estadoPedido">Recibido</span></p>
                     </div>
 
-                    <div class="notas warm-notas">
-                        <label for="notas">Notas</label><br>
-                        <textarea id="notas" rows="4" readonly></textarea>
+                    <div class="notas">
+                        <label for="notas">Notas</label>
+                        <textarea id="notas" rows="3" readonly></textarea>
                     </div>
                 </div>
 
-                <h3 class="warm-subtitle">Productos</h3>
-                <div id="listaProductos"></div>
+                <h3 class="productos-titulo">Productos</h3>
+                <div id="listaProductos" class="productos-lista">
+                    <!-- Ejemplo de producto -->
+                    <div class="producto-item">
+                        <div>
+                            <p><strong>Café Americano</strong></p>
+                            <small>Cantidad: 1</small>
+                        </div>
+                        <div class="precio">
+                            <strong>$2.50</strong>
+                            <p>Precio unitario: $2.50</p>
+                        </div>
+                    </div>
 
-                <div class="total-container warm-total">
+                    <div class="producto-item">
+                        <div>
+                            <p><strong>Refresco</strong></p>
+                            <small>Cantidad: 1</small>
+                        </div>
+                        <div class="precio">
+                            <strong>$2.00</strong>
+                            <p>Precio unitario: $2.00</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="total-container">
                     <span>Total:</span>
-                    <strong id="totalPedido">$0.00</strong>
+                    <strong id="totalPedido">$4.50</strong>
                 </div>
             </div>
         </div>
