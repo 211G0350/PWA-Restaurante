@@ -95,421 +95,421 @@
     </div>
 </main>
 
-<script>
-    const modalAgregar = document.getElementById('modalAgregar');
-    const modalEditar = document.getElementById('modalEditar');
-    const modalEliminar = document.getElementById('modalEliminar');
-    let userIdActual = null;
+    <script>
+        const modalAgregar = document.getElementById('modalAgregar');
+        const modalEditar = document.getElementById('modalEditar');
+        const modalEliminar = document.getElementById('modalEliminar');
+        let userIdActual = null;
 
-    function getAuthToken() {
-        return localStorage.getItem('token') || sessionStorage.getItem('token');
-    }
-
-    async function fetchWithAuth(url, options = {}) {
-        const token = getAuthToken();
-        const headers = {
-            'Content-Type': 'application/json',
-            ...options.headers
-        };
-
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
+        function getAuthToken() {
+            return localStorage.getItem('token') || sessionStorage.getItem('token');
         }
 
-        const response = await fetch(url, {
-            ...options,
-            headers
-        });
-
-        const contentType = response.headers.get('content-type') || '';
-        const isJson = contentType.includes('application/json');
-        let responseBody = null;
-
-        if (isJson) {
-            responseBody = await response.json().catch(() => null);
-        } else {
-            responseBody = await response.text().catch(() => '');
-        }
-
-        if (!response.ok) {
-            if (response.status === 401) {
-                alert('Sesión expirada. Por favor, inicia sesión nuevamente.');
-                window.location.href = '/';
-                return null;
-            }
-
-            let errorMessage = `Error ${response.status}`;
-
-            if (Array.isArray(responseBody)) {
-                errorMessage = responseBody.join(' ');
-            } else if (responseBody && typeof responseBody === 'object' && 'message' in responseBody) {
-                errorMessage = responseBody.message;
-            } else if (typeof responseBody === 'string' && responseBody.trim().length > 0) {
-                errorMessage = responseBody;
-            }
-
-            throw new Error(errorMessage);
-        }
-
-        return responseBody;
-    }
-
-    function cerrarModal() {
-        modalAgregar.classList.remove('active');
-        modalEditar.classList.remove('active');
-        modalEliminar.classList.remove('active');
-        limpiarFormularios();
-    }
-
-    function limpiarFormularios(resetearUserId = true) {
-        document.getElementById('nombreNuevo').value = '';
-        document.getElementById('rolNuevo').value = '';
-        document.getElementById('correoNuevo').value = '';
-        document.getElementById('passNuevo').value = '';
-        ocultarError('errorAgregar');
-        document.getElementById('nombreEditar').value = '';
-        document.getElementById('rolEditar').value = '';
-        document.getElementById('correoEditar').value = '';
-        document.getElementById('passEditar').value = '';
-        ocultarError('errorEditar');
-        document.getElementById('cargandoEditar').style.display = 'none';
-        document.getElementById('datosUsuarioEliminar').style.display = 'none';
-        document.getElementById('cargandoEliminar').style.display = 'none';
-        ocultarError('errorEliminar');
-        if (resetearUserId) {
-            userIdActual = null;
-        }
-    }
-
-    function mostrarError(elementId, mensaje) {
-        const errorElement = document.getElementById(elementId);
-        errorElement.textContent = mensaje;
-        errorElement.style.display = 'block';
-    }
-
-    function ocultarError(elementId) {
-        const errorElement = document.getElementById(elementId);
-        errorElement.style.display = 'none';
-    }
-
-
-    async function cargarUsuarios() {
-        try {
-            const usuarios = await fetchWithAuth('/api/Usuarios/ObtenerTodos');
-            if (!usuarios) return;
-
-            const container = document.getElementById('usuariosContainer');
-            container.innerHTML = '';
-
-            if (usuarios.length === 0) {
-                container.innerHTML = '<p>No hay usuarios registrados</p>';
-                return;
-            }
-
-            usuarios.forEach(usuario => {
-                const usuarioCard = document.createElement('div');
-                usuarioCard.className = 'usuario-card';
-
-                const nombre = usuario.Nombre || usuario.nombre || '';
-                const rol = usuario.Rol || usuario.rol || '';
-                const id = usuario.Id || usuario.id || 0;
-
-                usuarioCard.innerHTML = `
-                    <p><strong>Nombre:</strong> ${nombre}</p>
-                    <p><strong>Rol:</strong> ${rol}</p>
-                    <div class="acciones">
-                        <button class="editar" data-id="${id}"><i class="fa-solid fa-pen"></i></button>
-                        <button class="eliminar" data-id="${id}"><i class="fa-solid fa-trash"></i></button>
-                    </div>
-                `;
-
-                container.appendChild(usuarioCard);
-            });
-            document.querySelectorAll('.editar').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const userId = parseInt(this.getAttribute('data-id'));
-                    abrirModalEditar(userId);
-                });
-            });
-
-            document.querySelectorAll('.eliminar').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const userId = parseInt(this.getAttribute('data-id'));
-                    abrirModalEliminar(userId);
-                });
-            });
-
-        } catch (error) {
-            console.error('Error al cargar usuarios:', error);
-            alert('Error al cargar los usuarios. Por favor, recarga la página.');
-        }
-    }
-
-    function abrirModalAgregar() {
-        limpiarFormularios();
-        modalAgregar.classList.add('active');
-    }
-    async function abrirModalEditar(userId) {
-        userIdActual = userId;
-        limpiarFormularios(false); 
-        modalEditar.classList.add('active');
-        document.getElementById('cargandoEditar').style.display = 'block';
-
-        try {
+        async function fetchWithAuth(url, options = {}) {
             const token = getAuthToken();
             const headers = {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                ...options.headers
             };
 
             if (token) {
                 headers['Authorization'] = `Bearer ${token}`;
             }
 
-            const response = await fetch(`/api/Usuarios/ObtenerPorId/${userId}`, { headers });
-
-            if (!response.ok) {
-                if (response.status === 404) {
-                    alert('Usuario no encontrado');
-                    cerrarModal();
-                    cargarUsuarios();
-                    return;
-                }
-                throw new Error('Error al cargar usuario');
-            }
-
-            const usuario = await response.json();
-            document.getElementById('nombreEditar').value = usuario.Nombre || usuario.nombre || '';
-            document.getElementById('correoEditar').value = usuario.Correo || usuario.correo || '';
-            document.getElementById('rolEditar').value = usuario.Rol || usuario.rol || '';
-
-        } catch (error) {
-            console.error('Error al cargar usuario:', error);
-            alert('Error al cargar el usuario');
-            cerrarModal();
-        } finally {
-            document.getElementById('cargandoEditar').style.display = 'none';
-        }
-    }
-
-    async function abrirModalEliminar(userId) {
-        userIdActual = userId;
-        limpiarFormularios(false);
-        modalEliminar.classList.add('active');
-        document.getElementById('cargandoEliminar').style.display = 'block';
-        document.getElementById('datosUsuarioEliminar').style.display = 'none';
-
-        try {
-            const token = getAuthToken();
-            const headers = {
-                'Content-Type': 'application/json'
-            };
-
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-
-            const response = await fetch(`/api/Usuarios/ObtenerPorId/${userId}`, { headers });
-            if (!response.ok) {
-                if (response.status === 404) {
-                    alert('Usuario no encontrado');
-                    cerrarModal();
-                    cargarUsuarios();
-                    return;
-                }
-                throw new Error('Error al cargar usuario');
-            }
-
-            const usuario = await response.json();
-            document.getElementById('usuarioEliminar').textContent = usuario.Nombre || usuario.nombre || '';
-            document.getElementById('rolEliminar').textContent = usuario.Rol || usuario.rol || '';
-            document.getElementById('datosUsuarioEliminar').style.display = 'block';
-
-        } catch (error) {
-            console.error('Error al cargar usuario:', error);
-            mostrarError('errorEliminar', 'Error al cargar el usuario');
-        } finally {
-            document.getElementById('cargandoEliminar').style.display = 'none';
-        }
-    }
-
-    // Todas las acciones api, EVERYONE IS HERE, en los modales
-    async function agregarUsuario() {
-        ocultarError('errorAgregar');
-        const nombre = document.getElementById('nombreNuevo').value.trim();
-        const rol = document.getElementById('rolNuevo').value;
-        const correo = document.getElementById('correoNuevo').value.trim();
-        const contrasena = document.getElementById('passNuevo').value;
-
-        if (!nombre || !rol || !correo || !contrasena) {
-            mostrarError('errorAgregar', 'Por favor, completa todos los campos.');
-            return;
-        }
-
-        const btnGuardar = document.getElementById('btnGuardarAgregar');
-        btnGuardar.disabled = true;
-        const textoOriginal = btnGuardar.textContent;
-        btnGuardar.textContent = 'Agregando...';
-
-        try {
-            const data = await fetchWithAuth('/api/Usuarios/Registrar', {
-                method: 'POST',
-                body: JSON.stringify({
-                    Nombre: nombre,
-                    Rol: rol,
-                    Correo: correo,
-                    Contrasena: contrasena
-                })
-            });
-            if (data) {
-                alert('Usuario agregado exitosamente');
-                cerrarModal();
-                cargarUsuarios();
-            }
-        } catch (error) {
-            console.error('Error al agregar usuario:', error);
-            mostrarError('errorAgregar', error.message || 'Error al agregar el usuario. Por favor, intenta nuevamente.');
-        } finally {
-            btnGuardar.disabled = false;
-            btnGuardar.textContent = textoOriginal;
-        }
-    }
-
-    async function editarUsuario() {
-        if (!userIdActual) {
-            alert('Error: ID de usuario no válido');
-            return;
-        }
-
-        ocultarError('errorEditar');
-        const nombre = document.getElementById('nombreEditar').value.trim();
-        const rol = document.getElementById('rolEditar').value;
-        const correo = document.getElementById('correoEditar').value.trim();
-        const contrasena = document.getElementById('passEditar').value.trim();
-
-        if (!nombre || !rol || !correo) {
-            mostrarError('errorEditar', 'Por favor, completa todos los campos obligatorios.');
-            return;
-        }
-
-        const btnGuardar = document.getElementById('btnGuardarEditar');
-        btnGuardar.disabled = true;
-        const textoOriginal = btnGuardar.textContent;
-        btnGuardar.textContent = 'Guardando...';
-        try {
-            const token = getAuthToken();
-            const headers = {
-                'Content-Type': 'application/json'
-            };
-
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-
-            const datos = {
-                Nombre: nombre,
-                Rol: rol,
-                Correo: correo
-            };
-
-            if (contrasena) {
-                datos.Contrasena = contrasena;
-            }
-            const response = await fetch(`/api/Usuarios/Editar/${userIdActual}`, {
-                method: 'PUT',
-                headers: headers,
-                body: JSON.stringify(datos)
+            const response = await fetch(url, {
+                ...options,
+                headers
             });
 
             const contentType = response.headers.get('content-type') || '';
             const isJson = contentType.includes('application/json');
-            const result = isJson
-                ? await response.json().catch(() => null)
-                : await response.text().catch(() => '');
+            let responseBody = null;
 
-            if (response.ok) {
-                const mensajeExito = result && typeof result === 'object' && 'message' in result
-                    ? result.message
-                    : (typeof result === 'string' && result.trim().length > 0 ? result : 'Usuario actualizado exitosamente');
-                alert(mensajeExito);
-                cerrarModal();
-                cargarUsuarios();
+            if (isJson) {
+                responseBody = await response.json().catch(() => null);
             } else {
-                let errorMsg = 'Error al actualizar usuario';
-                if (Array.isArray(result)) {
-                    errorMsg = result.join(' ');
-                } else if (result && typeof result === 'object' && 'message' in result) {
-                    errorMsg = result.message;
-                } else if (typeof result === 'string' && result.trim().length > 0) {
-                    errorMsg = result;
+                responseBody = await response.text().catch(() => '');
+            }
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    alert('Sesión expirada. Por favor, inicia sesión nuevamente.');
+                    window.location.href = '/';
+                    return null;
                 }
-                mostrarError('errorEditar', errorMsg);
+
+                let errorMessage = `Error ${response.status}`;
+
+                if (Array.isArray(responseBody)) {
+                    errorMessage = responseBody.join(' ');
+                } else if (responseBody && typeof responseBody === 'object' && 'message' in responseBody) {
+                    errorMessage = responseBody.message;
+                } else if (typeof responseBody === 'string' && responseBody.trim().length > 0) {
+                    errorMessage = responseBody;
+                }
+
+                throw new Error(errorMessage);
             }
 
-        } catch (error) {
-            console.error('Error al editar usuario:', error);
-            mostrarError('errorEditar', error.message || 'Error al actualizar el usuario');
-        } finally {
-            btnGuardar.disabled = false;
-            btnGuardar.textContent = textoOriginal;
+            return responseBody;
         }
-    }
 
-
-
-    async function eliminarUsuario() {
-        if (!userIdActual) {
-            alert('Error: ID de usuario no válido');
-            return;
+        function cerrarModal() {
+            modalAgregar.classList.remove('active');
+            modalEditar.classList.remove('active');
+            modalEliminar.classList.remove('active');
+            limpiarFormularios();
         }
-        if (!confirm('¿Está seguro de que desea eliminar este usuario? Esta acción no se puede deshacer.')) {
-            return;
-        }
-        ocultarError('errorEliminar');
 
-        const btnEliminar = document.getElementById('btnConfirmarEliminar');
-        btnEliminar.disabled = true;
-        const textoOriginal = btnEliminar.textContent;
-        btnEliminar.textContent = 'Eliminando...';
-
-        try {
-            const token = getAuthToken();
-            const headers = {
-                'Content-Type': 'application/json'
-            };
-
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
+        function limpiarFormularios(resetearUserId = true) {
+            document.getElementById('nombreNuevo').value = '';
+            document.getElementById('rolNuevo').value = '';
+            document.getElementById('correoNuevo').value = '';
+            document.getElementById('passNuevo').value = '';
+            ocultarError('errorAgregar');
+            document.getElementById('nombreEditar').value = '';
+            document.getElementById('rolEditar').value = '';
+            document.getElementById('correoEditar').value = '';
+            document.getElementById('passEditar').value = '';
+            ocultarError('errorEditar');
+            document.getElementById('cargandoEditar').style.display = 'none';
+            document.getElementById('datosUsuarioEliminar').style.display = 'none';
+            document.getElementById('cargandoEliminar').style.display = 'none';
+            ocultarError('errorEliminar');
+            if (resetearUserId) {
+                userIdActual = null;
             }
+        }
 
-            const response = await fetch(`/api/Usuarios/Eliminar/${userIdActual}`, {
-                method: 'DELETE',
-                headers: headers
-            });
-            const result = await response.json();
+        function mostrarError(elementId, mensaje) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = mensaje;
+            errorElement.style.display = 'block';
+        }
 
-            if (response.ok) {
-                alert(result.message || 'Usuario eliminado exitosamente');
+        function ocultarError(elementId) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.style.display = 'none';
+        }
+
+
+        async function cargarUsuarios() {
+            try {
+                const usuarios = await fetchWithAuth('/api/Usuarios/ObtenerTodos');
+                if (!usuarios) return;
+
+                const container = document.getElementById('usuariosContainer');
+                container.innerHTML = '';
+
+                if (usuarios.length === 0) {
+                    container.innerHTML = '<p>No hay usuarios registrados</p>';
+                    return;
+                }
+
+                usuarios.forEach(usuario => {
+                    const usuarioCard = document.createElement('div');
+                    usuarioCard.className = 'usuario-card';
+
+                    const nombre = usuario.Nombre || usuario.nombre || '';
+                    const rol = usuario.Rol || usuario.rol || '';
+                    const id = usuario.Id || usuario.id || 0;
+
+                    usuarioCard.innerHTML = `
+                        <p><strong>Nombre:</strong> ${nombre}</p>
+                        <p><strong>Rol:</strong> ${rol}</p>
+                        <div class="acciones">
+                            <button class="editar" data-id="${id}"><i class="fa-solid fa-pen"></i></button>
+                            <button class="eliminar" data-id="${id}"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    `;
+
+                    container.appendChild(usuarioCard);
+                });
+                document.querySelectorAll('.editar').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const userId = parseInt(this.getAttribute('data-id'));
+                        abrirModalEditar(userId);
+                    });
+                });
+
+                document.querySelectorAll('.eliminar').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const userId = parseInt(this.getAttribute('data-id'));
+                        abrirModalEliminar(userId);
+                    });
+                });
+
+            } catch (error) {
+                console.error('Error al cargar usuarios:', error);
+                alert('Error al cargar los usuarios. Por favor, recarga la página.');
+            }
+        }
+
+        function abrirModalAgregar() {
+            limpiarFormularios();
+            modalAgregar.classList.add('active');
+        }
+        async function abrirModalEditar(userId) {
+            userIdActual = userId;
+            limpiarFormularios(false); 
+            modalEditar.classList.add('active');
+            document.getElementById('cargandoEditar').style.display = 'block';
+
+            try {
+                const token = getAuthToken();
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const response = await fetch(`/api/Usuarios/ObtenerPorId/${userId}`, { headers });
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        alert('Usuario no encontrado');
+                        cerrarModal();
+                        cargarUsuarios();
+                        return;
+                    }
+                    throw new Error('Error al cargar usuario');
+                }
+
+                const usuario = await response.json();
+                document.getElementById('nombreEditar').value = usuario.Nombre || usuario.nombre || '';
+                document.getElementById('correoEditar').value = usuario.Correo || usuario.correo || '';
+                document.getElementById('rolEditar').value = usuario.Rol || usuario.rol || '';
+
+            } catch (error) {
+                console.error('Error al cargar usuario:', error);
+                alert('Error al cargar el usuario');
                 cerrarModal();
-                cargarUsuarios();
-            } else {
-                const errorMsg = Array.isArray(result) ? result.join(', ') : (result.message || 'Error al eliminar usuario');
-                mostrarError('errorEliminar', errorMsg);
+            } finally {
+                document.getElementById('cargandoEditar').style.display = 'none';
+            }
+        }
+
+        async function abrirModalEliminar(userId) {
+            userIdActual = userId;
+            limpiarFormularios(false);
+            modalEliminar.classList.add('active');
+            document.getElementById('cargandoEliminar').style.display = 'block';
+            document.getElementById('datosUsuarioEliminar').style.display = 'none';
+
+            try {
+                const token = getAuthToken();
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const response = await fetch(`/api/Usuarios/ObtenerPorId/${userId}`, { headers });
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        alert('Usuario no encontrado');
+                        cerrarModal();
+                        cargarUsuarios();
+                        return;
+                    }
+                    throw new Error('Error al cargar usuario');
+                }
+
+                const usuario = await response.json();
+                document.getElementById('usuarioEliminar').textContent = usuario.Nombre || usuario.nombre || '';
+                document.getElementById('rolEliminar').textContent = usuario.Rol || usuario.rol || '';
+                document.getElementById('datosUsuarioEliminar').style.display = 'block';
+
+            } catch (error) {
+                console.error('Error al cargar usuario:', error);
+                mostrarError('errorEliminar', 'Error al cargar el usuario');
+            } finally {
+                document.getElementById('cargandoEliminar').style.display = 'none';
+            }
+        }
+
+        // Todas las acciones api, EVERYONE IS HERE, en los modales
+        async function agregarUsuario() {
+            ocultarError('errorAgregar');
+            const nombre = document.getElementById('nombreNuevo').value.trim();
+            const rol = document.getElementById('rolNuevo').value;
+            const correo = document.getElementById('correoNuevo').value.trim();
+            const contrasena = document.getElementById('passNuevo').value;
+
+            if (!nombre || !rol || !correo || !contrasena) {
+                mostrarError('errorAgregar', 'Por favor, completa todos los campos.');
+                return;
             }
 
-        } catch (error) {
-            console.error('Error al eliminar usuario:', error);
-            mostrarError('errorEliminar', 'Error al eliminar el usuario');
-        } finally {
-            btnEliminar.disabled = false;
-            btnEliminar.textContent = textoOriginal;
-        }
-    }
+            const btnGuardar = document.getElementById('btnGuardarAgregar');
+            btnGuardar.disabled = true;
+            const textoOriginal = btnGuardar.textContent;
+            btnGuardar.textContent = 'Agregando...';
 
-    document.getElementById('btnAgregar').addEventListener('click', abrirModalAgregar);
-    document.getElementById('btnGuardarAgregar').addEventListener('click', agregarUsuario);
-    document.getElementById('btnGuardarEditar').addEventListener('click', editarUsuario);
-    document.getElementById('btnConfirmarEliminar').addEventListener('click', eliminarUsuario);
-    document.addEventListener('DOMContentLoaded', cargarUsuarios);
+            try {
+                const data = await fetchWithAuth('/api/Usuarios/Registrar', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        Nombre: nombre,
+                        Rol: rol,
+                        Correo: correo,
+                        Contrasena: contrasena
+                    })
+                });
+                if (data) {
+                    alert('Usuario agregado exitosamente');
+                    cerrarModal();
+                    cargarUsuarios();
+                }
+            } catch (error) {
+                console.error('Error al agregar usuario:', error);
+                mostrarError('errorAgregar', error.message || 'Error al agregar el usuario. Por favor, intenta nuevamente.');
+            } finally {
+                btnGuardar.disabled = false;
+                btnGuardar.textContent = textoOriginal;
+            }
+        }
+
+        async function editarUsuario() {
+            if (!userIdActual) {
+                alert('Error: ID de usuario no válido');
+                return;
+            }
+
+            ocultarError('errorEditar');
+            const nombre = document.getElementById('nombreEditar').value.trim();
+            const rol = document.getElementById('rolEditar').value;
+            const correo = document.getElementById('correoEditar').value.trim();
+            const contrasena = document.getElementById('passEditar').value.trim();
+
+            if (!nombre || !rol || !correo) {
+                mostrarError('errorEditar', 'Por favor, completa todos los campos obligatorios.');
+                return;
+            }
+
+            const btnGuardar = document.getElementById('btnGuardarEditar');
+            btnGuardar.disabled = true;
+            const textoOriginal = btnGuardar.textContent;
+            btnGuardar.textContent = 'Guardando...';
+            try {
+                const token = getAuthToken();
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const datos = {
+                    Nombre: nombre,
+                    Rol: rol,
+                    Correo: correo
+                };
+
+                if (contrasena) {
+                    datos.Contrasena = contrasena;
+                }
+                const response = await fetch(`/api/Usuarios/Editar/${userIdActual}`, {
+                    method: 'PUT',
+                    headers: headers,
+                    body: JSON.stringify(datos)
+                });
+
+                const contentType = response.headers.get('content-type') || '';
+                const isJson = contentType.includes('application/json');
+                const result = isJson
+                    ? await response.json().catch(() => null)
+                    : await response.text().catch(() => '');
+
+                if (response.ok) {
+                    const mensajeExito = result && typeof result === 'object' && 'message' in result
+                        ? result.message
+                        : (typeof result === 'string' && result.trim().length > 0 ? result : 'Usuario actualizado exitosamente');
+                    alert(mensajeExito);
+                    cerrarModal();
+                    cargarUsuarios();
+                } else {
+                    let errorMsg = 'Error al actualizar usuario';
+                    if (Array.isArray(result)) {
+                        errorMsg = result.join(' ');
+                    } else if (result && typeof result === 'object' && 'message' in result) {
+                        errorMsg = result.message;
+                    } else if (typeof result === 'string' && result.trim().length > 0) {
+                        errorMsg = result;
+                    }
+                    mostrarError('errorEditar', errorMsg);
+                }
+
+            } catch (error) {
+                console.error('Error al editar usuario:', error);
+                mostrarError('errorEditar', error.message || 'Error al actualizar el usuario');
+            } finally {
+                btnGuardar.disabled = false;
+                btnGuardar.textContent = textoOriginal;
+            }
+        }
+
+
+
+        async function eliminarUsuario() {
+            if (!userIdActual) {
+                alert('Error: ID de usuario no válido');
+                return;
+            }
+            if (!confirm('¿Está seguro de que desea eliminar este usuario? Esta acción no se puede deshacer.')) {
+                return;
+            }
+            ocultarError('errorEliminar');
+
+            const btnEliminar = document.getElementById('btnConfirmarEliminar');
+            btnEliminar.disabled = true;
+            const textoOriginal = btnEliminar.textContent;
+            btnEliminar.textContent = 'Eliminando...';
+
+            try {
+                const token = getAuthToken();
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const response = await fetch(`/api/Usuarios/Eliminar/${userIdActual}`, {
+                    method: 'DELETE',
+                    headers: headers
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(result.message || 'Usuario eliminado exitosamente');
+                    cerrarModal();
+                    cargarUsuarios();
+                } else {
+                    const errorMsg = Array.isArray(result) ? result.join(', ') : (result.message || 'Error al eliminar usuario');
+                    mostrarError('errorEliminar', errorMsg);
+                }
+
+            } catch (error) {
+                console.error('Error al eliminar usuario:', error);
+                mostrarError('errorEliminar', 'Error al eliminar el usuario');
+            } finally {
+                btnEliminar.disabled = false;
+                btnEliminar.textContent = textoOriginal;
+            }
+        }
+
+        document.getElementById('btnAgregar').addEventListener('click', abrirModalAgregar);
+        document.getElementById('btnGuardarAgregar').addEventListener('click', agregarUsuario);
+        document.getElementById('btnGuardarEditar').addEventListener('click', editarUsuario);
+        document.getElementById('btnConfirmarEliminar').addEventListener('click', eliminarUsuario);
+        document.addEventListener('DOMContentLoaded', cargarUsuarios);
 
 
 

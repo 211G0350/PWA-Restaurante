@@ -21,144 +21,171 @@
     </div>
 </section>
 
-    <script>
-        function getAuthToken() {
-            return sessionStorage.getItem('token') || localStorage.getItem('token');
-        }
+<script>
+    function getAuthToken() {
+        return sessionStorage.getItem('token') || localStorage.getItem('token');
+    }
 
-        function formatearFecha(fecha) {
-            const date = new Date(fecha);
-            return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-        }
+    function formatearFecha(fecha) {
+        const date = new Date(fecha);
+        return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    }
 
-        function obtenerEstadoTexto(estado) {
-            const estados = {
-                'pendiente': 'Sin Enviar',
-                'enviado': 'Enviado',
-                'en preparacion': 'En Preparación',
-                'listo': 'Listo'
-            };
-            return estados[estado?.toLowerCase()] || estado;
-        }
-
-        function obtenerClaseEstado(estado) {
-            const clases = {
-                'pendiente': 'pending',
-                'enviado': 'sent',
-                'en preparacion': 'preparing',
-                'listo': 'ready'
-            };
-            return clases[estado?.toLowerCase()] || 'pending';
-        }
-
-        async function cargarPedidosPendientes() {
-            try {
-                const token = getAuthToken();
-                const headers = { 'Content-Type': 'application/json' };
-                if (token) headers['Authorization'] = `Bearer ${token}`;
-
-                const response = await fetch('/api/Pedidos/Pendientes', { headers });
-                if (!response.ok) throw new Error('Error al cargar pedidos pendientes');
-
-                const pedidos = await response.json();
-                const container = document.getElementById('pedidosPendientes');
-                container.innerHTML = '';
-
-                if (pedidos.length === 0) {
-                    container.innerHTML = '<p>No hay pedidos pendientes</p>';
-                    return;
-                }
-
-                pedidos.forEach(pedido => {
-                    container.innerHTML += `
-                        <div class="order-card">
-                            <div class="order-header">
-                                <h4>Mesa ${pedido.NumMesa || pedido.numMesa}</h4>
-                                <span class="status ${obtenerClaseEstado(pedido.Estado || pedido.estado)}">
-                                    ${obtenerEstadoTexto(pedido.Estado || pedido.estado)}
-                                </span>
-                            </div>
-                            <div class="order-body">
-                                <p class="time">${formatearFecha(pedido.TomadoEn || pedido.tomadoEn)}</p>
-                                <p class="price">$${(pedido.PrecioTotal || pedido.precioTotal).toFixed(2)}</p>
-                            </div>
-                            <button class="details-btn" onclick="verDetalles(${pedido.Id || pedido.id})">
-                                <i class="fa-regular fa-eye"></i> Ver Detalles
-                            </button>
-                        </div>`;
-                });
-            } catch (error) {
-                console.error(error);
-                document.getElementById('pedidosPendientes').innerHTML = '<p>Error al cargar pedidos</p>';
-            }
-        }
-
-        async function cargarPedidosActivos() {
-            try {
-                const token = getAuthToken();
-                const headers = { 'Content-Type': 'application/json' };
-                if (token) headers['Authorization'] = `Bearer ${token}`;
-
-                const response = await fetch('/api/Pedidos/Todos', { headers });
-                if (!response.ok) throw new Error('Error al cargar pedidos activos');
-
-                const pedidos = await response.json();
-                const container = document.getElementById('pedidosActivos');
-                container.innerHTML = '';
-                document.getElementById('contadorActivas').textContent = pedidos.length;
-
-                if (pedidos.length === 0) {
-                    container.innerHTML = '<p>No hay pedidos activos</p>';
-                    return;
-                }
-
-                pedidos.forEach(pedido => {
-                    container.innerHTML += `
-                        <div class="order-card">
-                            <div class="order-header">
-                                <h4>Mesa ${pedido.NumMesa || pedido.numMesa}</h4>
-                                <span class="status ${obtenerClaseEstado(pedido.Estado || pedido.estado)}">
-                                    ${obtenerEstadoTexto(pedido.Estado || pedido.estado)}
-                                </span>
-                            </div>
-                            <div class="order-body">
-                                <p class="time">${formatearFecha(pedido.TomadoEn || pedido.tomadoEn)}</p>
-                                <p class="price">$${(pedido.PrecioTotal || pedido.precioTotal).toFixed(2)}</p>
-                            </div>
-                            <button class="details-btn" onclick="verDetalles(${pedido.Id || pedido.id})">
-                                <i class="fa-regular fa-eye"></i> Ver Detalles
-                            </button>
-                        </div>`;
-                });
-            } catch (error) {
-                console.error(error);
-                document.getElementById('pedidosActivos').innerHTML = '<p>Error al cargar pedidos</p>';
-            }
-        }
-
-        function verDetalles(id) {
-            window.location.href = `/Mesero/detalleordenDato/${id}`;
-        }
-
-        document.getElementById('btnCrearOrden').addEventListener('click', () => {
-            window.location.href = '/Mesero/crearNuevaOr';
-        });
-
-        const actualizarListados = () => {
-            cargarPedidosPendientes();
-            cargarPedidosActivos();
+    function obtenerEstadoTexto(estado) {
+        const estados = {
+            'pendiente': 'Sin Enviar',
+            'enviado': 'Enviado',
+            'en preparacion': 'En Preparación',
+            'listo': 'Listo'
         };
+        return estados[estado?.toLowerCase()] || estado;
+    }
 
-        window.addEventListener('pedidos:hubListo', actualizarListados);
-        window.addEventListener('pedidos:actualizar', actualizarListados);
-        window.addEventListener('pedidos:estadoActualizado', actualizarListados);
-        window.addEventListener('pedidos:pedidoEnviado', actualizarListados);
+    function obtenerClaseEstado(estado) {
+        const clases = {
+            'pendiente': 'pending',
+            'enviado': 'sent',
+            'en preparacion': 'preparing',
+            'listo': 'ready'
+        };
+        return clases[estado?.toLowerCase()] || 'pending';
+    }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            if (window.pedidosHubClient?.ensureStarted) {
-                window.pedidosHubClient.ensureStarted();
+    async function cargarPedidosPendientes() {
+        try {
+            const token = getAuthToken();
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const response = await fetch('/api/Pedidos/Pendientes', { headers });
+            if (!response.ok) throw new Error('Error al cargar pedidos pendientes');
+
+            const pedidos = await response.json();
+            const container = document.getElementById('pedidosPendientes');
+            container.innerHTML = '';
+
+            if (pedidos.length === 0) {
+                container.innerHTML = '<p>No hay pedidos pendientes</p>';
+                return;
             }
-            actualizarListados();
-        });
-    </script>
 
+            pedidos.forEach(pedido => {
+                const id = pedido.Id || pedido.id;
+                container.innerHTML += `
+                    <div class="order-card">
+                        <div class="order-header">
+                            <h4>Mesa ${pedido.NumMesa || pedido.numMesa}</h4>
+                            <span class="status ${obtenerClaseEstado(pedido.Estado || pedido.estado)}">
+                                ${obtenerEstadoTexto(pedido.Estado || pedido.estado)}
+                            </span>
+                        </div>
+                        <div class="order-body">
+                            <p class="time">${formatearFecha(pedido.TomadoEn || pedido.tomadoEn)}</p>
+                            <p class="price">$${(pedido.PrecioTotal || pedido.precioTotal).toFixed(2)}</p>
+                        </div>
+                        <div class="order-actions">
+                            <button class="details-btn" onclick="verDetalles(${id})">
+                                <i class="fa-regular fa-eye"></i> Ver Detalles
+                            </button>
+                            <button class="details-btn" style="background-color:#f2b13e;" onclick="editarPedido(${id})">
+                                <i class="fa-solid fa-pen"></i> Editar
+                            </button>
+                            <button class="details-btn" style="background-color:#d9534f; color:white;" onclick="eliminarPedido(${id})">
+                                <i class="fa-solid fa-trash"></i> Eliminar
+                            </button>
+                        </div>
+                    </div>`;
+            });
+        } catch (error) {
+            console.error(error);
+            document.getElementById('pedidosPendientes').innerHTML = '<p>Error al cargar pedidos</p>';
+        }
+    }
+
+    async function cargarPedidosActivos() {
+        try {
+            const token = getAuthToken();
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const response = await fetch('/api/Pedidos/Todos', { headers });
+            if (!response.ok) throw new Error('Error al cargar pedidos activos');
+
+            const pedidos = await response.json();
+            const container = document.getElementById('pedidosActivos');
+            container.innerHTML = '';
+            document.getElementById('contadorActivas').textContent = pedidos.length;
+
+            if (pedidos.length === 0) {
+                container.innerHTML = '<p>No hay pedidos activos</p>';
+                return;
+            }
+
+            pedidos.forEach(pedido => {
+                const id = pedido.Id || pedido.id;
+                container.innerHTML += `
+                    <div class="order-card">
+                        <div class="order-header">
+                            <h4>Mesa ${pedido.NumMesa || pedido.numMesa}</h4>
+                            <span class="status ${obtenerClaseEstado(pedido.Estado || pedido.estado)}">
+                                ${obtenerEstadoTexto(pedido.Estado || pedido.estado)}
+                            </span>
+                        </div>
+                        <div class="order-body">
+                            <p class="time">${formatearFecha(pedido.TomadoEn || pedido.tomadoEn)}</p>
+                            <p class="price">$${(pedido.PrecioTotal || pedido.precioTotal).toFixed(2)}</p>
+                        </div>
+                        <div class="order-actions">
+                            <button class="details-btn" onclick="verDetalles(${id})">
+                                <i class="fa-regular fa-eye"></i> Ver Detalles
+                            </button>
+                            <button class="details-btn" style="background-color:#f2b13e;" onclick="editarPedido(${id})">
+                                <i class="fa-solid fa-pen"></i> Editar
+                            </button>
+                            <button class="details-btn" style="background-color:#d9534f; color:white;" onclick="eliminarPedido(${id})">
+                                <i class="fa-solid fa-trash"></i> Eliminar
+                            </button>
+                        </div>
+                    </div>`;
+            });
+        } catch (error) {
+            console.error(error);
+            document.getElementById('pedidosActivos').innerHTML = '<p>Error al cargar pedidos</p>';
+        }
+    }
+
+    function verDetalles(id) {
+        window.location.href = `/Mesero/detalleordenDato/${id}`;
+    }
+
+    function editarPedido(id) {
+        // 🔗 Redirige a la vista EditarPendiente
+        window.location.href = `/Mesero/EditarPendiente/${id}`;
+    }
+
+    function eliminarPedido(id) {
+        // 🔗 Redirige a la vista EliminarPendiente
+        window.location.href = `/Mesero/EliminarPendiente/${id}`;
+    }
+
+    document.getElementById('btnCrearOrden').addEventListener('click', () => {
+        window.location.href = '/Mesero/crearNuevaOr';
+    });
+
+    const actualizarListados = () => {
+        cargarPedidosPendientes();
+        cargarPedidosActivos();
+    };
+
+    window.addEventListener('pedidos:hubListo', actualizarListados);
+    window.addEventListener('pedidos:actualizar', actualizarListados);
+    window.addEventListener('pedidos:estadoActualizado', actualizarListados);
+    window.addEventListener('pedidos:pedidoEnviado', actualizarListados);
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.pedidosHubClient?.ensureStarted) {
+            window.pedidosHubClient.ensureStarted();
+        }
+        actualizarListados();
+    });
+</script>

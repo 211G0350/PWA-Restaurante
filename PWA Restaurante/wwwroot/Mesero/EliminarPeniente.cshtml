@@ -1,0 +1,76 @@
+﻿@{
+    Layout = "_LayoutMesero";
+    ViewData["Title"] = "Eliminar Orden Pendiente";
+}
+
+<div class="overlay">
+    <div class="modal">
+        <header class="modal-header warm">
+            <h1>🗑️ Eliminar Orden</h1>
+            <button class="close" aria-label="Cerrar" onclick="window.location.href='/Mesero/panelMesero'">✕</button>
+        </header>
+
+        <div class="modal-body warm-body">
+            <section style="flex:1; text-align:center;">
+                <h2>¿Desea eliminar esta orden?</h2>
+                <p><strong>Número de Mesa:</strong> <span id="numMesa"></span></p>
+                <p><strong>Notas:</strong> <span id="notasOrden"></span></p>
+                <div style="margin-top:25px;">
+                    <button class="btn warm-btn-main" id="confirmarEliminar">Eliminar</button>
+                    <button class="btn" style="background:#ccc; margin-left:10px;" onclick="window.location.href='/Mesero/panelMesero'">Cancelar</button>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const pedidoId = obtenerIdDeUrl();
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+        if (!pedidoId) {
+            alert("ID de pedido no válido");
+            window.location.href = '/Mesero/panelMesero';
+            return;
+        }
+
+        try {
+            const resp = await fetch(`/api/Pedidos/ObtenerPorId/${pedidoId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const pedido = await resp.json();
+
+            document.getElementById('numMesa').textContent = pedido.numMesa;
+            document.getElementById('notasOrden').textContent = pedido.notasEspeciales || "(sin notas)";
+        } catch (err) {
+            alert("Error al cargar la orden");
+            window.location.href = '/Mesero/panelMesero';
+        }
+
+        document.getElementById('confirmarEliminar').addEventListener('click', async () => {
+            if (!confirm("¿Seguro que desea eliminar esta orden?")) return;
+
+            try {
+                const resp = await fetch(`/api/Pedidos/Eliminar/${pedidoId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!resp.ok) throw new Error("Error al eliminar la orden");
+
+                alert("Orden eliminada correctamente");
+                window.location.href = '/Mesero/panelMesero';
+            } catch (err) {
+                alert(err.message);
+            }
+        });
+
+        function obtenerIdDeUrl() {
+            const partes = window.location.pathname.split('/');
+            return parseInt(partes[partes.length - 1]) || null;
+        }
+    });
+</script>

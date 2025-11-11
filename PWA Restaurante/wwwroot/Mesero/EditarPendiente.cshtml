@@ -1,0 +1,167 @@
+@{
+    Layout = "_LayoutMesero";
+    ViewData["Title"] = "Editar Orden Pendiente";
+}
+
+<div class="overlay">
+    <div class="modal">
+        <header class="modal-header warm">
+            <h1>✏️ Editar Orden</h1>
+            <button class="close" aria-label="Cerrar" onclick="window.location.href='/Mesero/panelMesero'">✕</button>
+        </header>
+
+        <div class="modal-body warm-body">
+            <section class="left">
+                <div class="form-row">
+                    <label>Número de Mesa *</label>
+                    <input type="number" id="numMesaInput" min="1" placeholder="Ej. 4" />
+                    <label class="notes-label">Notas Especiales</label>
+                    <input type="text" class="notes" id="notasInput" placeholder="..." />
+                </div>
+
+                <nav class="tabs warm-tabs" id="categoriaTabs">
+                    <p class="loading-message">Cargando categorías...</p>
+                </nav>
+
+                <div class="product-grid" id="productosGrid">
+                    <p class="empty-message">Selecciona una categoría para ver los productos.</p>
+                </div>
+            </section>
+
+            <aside class="right">
+                <div class="summary-header warm-summary">
+                    <i class="fa-solid fa-cart-shopping cart-icon"></i>
+                    <h2>Resumen de Orden</h2>
+                </div>
+
+                <div class="order-items" id="resumenItems">
+                    <p class="empty-summary">No hay productos agregados.</p>
+                </div>
+
+                <hr class="divider warm-divider" />
+
+                <div class="total-row">
+                    <p>Total:</p>
+                    <p class="total-amount" id="totalAmount">$0.00</p>
+                </div>
+
+                <button class="btn create warm-btn-main" id="editarOrdenBtn" disabled>Guardar Cambios</button>
+            </aside>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    const pedidoId = obtenerIdDeUrl();
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+    const ui = {
+        numMesa: document.getElementById('numMesaInput'),
+        notas: document.getElementById('notasInput'),
+        total: document.getElementById('totalAmount'),
+        resumen: document.getElementById('resumenItems'),
+        btnGuardar: document.getElementById('editarOrdenBtn')
+    };
+
+    const state = { pedido: new Map() };
+
+    if (!pedidoId) {
+        alert("ID de pedido no válido");
+        window.location.href = '/Mesero/panelMesero';
+        return;
+    }
+
+    await cargarPedido();
+
+    async function cargarPedido() {
+        try {
+            const resp = await fetch(`/api/Pedidos/ObtenerPorId/${pedidoId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const pedido = await resp.json();
+
+            ui.numMesa.value = pedido.numMesa;
+            ui.notas.value = pedido.notasEspeciales || "";
+
+            pedido.detalles.forEach(det => {
+                state.pedido.set(det.productoId, {
+                    id: det.productoId,
+                    nombre: det.productoNombre,
+                    precio: det.precioUnitario,
+                    cantidad: det.cantidad
+                });
+            });
+
+            renderResumen();
+            ui.btnGuardar.disabled = false;
+        } catch (err) {
+            console.error("Error cargando pedido:", err);
+            alert("No se pudo cargar el pedido.");
+            window.location.href = '/Mesero/panelMesero';
+        }
+    }
+
+    ui.btnGuardar.addEventListener('click', async () => {
+        const payload = {
+            id: pedidoId,
+            numMesa: Number(ui.numMesa.value),
+            notasEspeciales: ui.notas.value,
+            detalles: Array.from(state.pedido.values()).map(p => ({
+                productoId: p.id,
+                cantidad: p.cantidad,
+                precioUnitario: p.precio
+            }))
+        };
+
+        try {
+            const resp = await fetch(`/api/Pedidos/Actualizar/${pedidoId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!resp.ok) throw new Error("Error al guardar los cambios");
+            alert("Orden actualizada correctamente");
+            window.location.href = '/Mesero/panelMesero';
+        } catch (err) {
+            alert(err.message);
+        }
+    });
+
+    function renderResumen() {
+        if (!state.pedido.size) {
+            ui.resumen.innerHTML = '<p class="empty-summary">No hay productos agregados.</p>';
+            ui.total.textContent = "$0.00";
+            return;
+        }
+
+        let total = 0;
+        ui.resumen.innerHTML = Array.from(state.pedido.values()).map(p => {
+            const subtotal = p.precio * p.cantidad;
+            total += subtotal;
+            return `
+                <div class="order-item warm-item">
+                    <div class="item-left">
+                        <p class="item-title">${p.nombre}</p>
+                        <p class="item-qty">Cantidad: ${p.cantidad}</p>
+                    </div>
+                    <div class="item-right">
+                        <p class="item-price">Subtotal: $${subtotal.toFixed(2)}</p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        ui.total.textContent = `$${total.toFixed(2)}`;
+    }
+
+    function obtenerIdDeUrl() {
+        const partes = window.location.pathname.split('/');
+        return parseInt(partes[partes.length - 1]) || null;
+    }
+});
+</script>
