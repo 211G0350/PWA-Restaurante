@@ -8,6 +8,21 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="wwwroot\Admin\Shared\**" />
+    <Compile Remove="wwwroot\Cociner\Controllers\**" />
+    <Compile Remove="wwwroot\Mesero\Controllers\**" />
+    <Content Remove="wwwroot\Admin\Shared\**" />
+    <Content Remove="wwwroot\Cociner\Controllers\**" />
+    <Content Remove="wwwroot\Mesero\Controllers\**" />
+    <EmbeddedResource Remove="wwwroot\Admin\Shared\**" />
+    <EmbeddedResource Remove="wwwroot\Cociner\Controllers\**" />
+    <EmbeddedResource Remove="wwwroot\Mesero\Controllers\**" />
+    <None Remove="wwwroot\Admin\Shared\**" />
+    <None Remove="wwwroot\Cociner\Controllers\**" />
+    <None Remove="wwwroot\Mesero\Controllers\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Remove="wwwroot\Home\index.cshtml" />
   </ItemGroup>
 
@@ -23,14 +38,6 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="8.0.11" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-	  
-    <Folder Include="wwwroot\Admin\Shared\" />
-    <Folder Include="wwwroot\Cociner\Controllers\" />
-    <Folder Include="wwwroot\Mesero\Controllers\" />
-    <Folder Include="wwwroot\Mesero\AjustMesero\" />
   </ItemGroup>
 
   <ItemGroup>
