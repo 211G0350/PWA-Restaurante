@@ -201,3 +201,85 @@
         background: #fff;
         padding: 5px;
     }
+/* =======================
+    RESPONSIVE PRINCIPAL 
+=========================*/
+@media (max-width: 768px) {
+
+    /* HEADER */
+    header {
+        flex-direction: column;
+        height: auto;
+        padding: 10px;
+        text-align: center;
+        gap: 10px;
+    }
+
+    .panel-left {
+        width: 100%;
+        justify-content: center;
+        border-right: none;
+    }
+
+    .nav-center {
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+    }
+
+    .panel-right {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* MAIN */
+    main {
+        padding: 10px;
+    }
+
+    /* SIDEBAR – Admin Usuarios */
+    .main-content {
+        flex-direction: column;
+        height: auto;
+    }
+
+    .sidebar {
+        width: 100%;
+    }
+
+    /* LISTA DE USUARIOS */
+    .usuario-card {
+        width: 100%;
+    }
+
+    /* GRID PRODUCTOS */
+    .productos-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 10px;
+    }
+
+    .producto-card img {
+        width: 50px;
+        height: 50px;
+    }
+
+    /* FORMULARIOS */
+    .form-container,
+    .modal-box,
+    .modal-editar,
+    .modal-eliminar {
+        width: 100% !important;
+        padding: 20px !important;
+    }
+
+    .form-row {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    /* IMAGEN CENTRAL */
+    .imagen-central img {
+        width: 140px;
+        height: 140px;
+    }
+}

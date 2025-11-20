@@ -738,3 +738,110 @@ body {
     from { transform: scale(0.9); opacity: 0; }
     to { transform: scale(1); opacity: 1; }
 }
+/* ============================
+    FORMULARIOS MESERO RESPONSIVOS
+   ============================ */
+
+.form-mesero {
+    max-width: 600px;
+    width: 100%;
+    margin: 20px auto;
+    background: #fff3e0;
+    padding: 25px;
+    border-radius: 14px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+}
+
+    .form-mesero h2 {
+        text-align: center;
+        margin-bottom: 20px;
+        font-size: 24px;
+    }
+
+    /* INPUTS */
+    .form-mesero input,
+    .form-mesero select {
+        width: 100%;
+        padding: 12px 15px;
+        border-radius: 10px;
+        border: 2px solid #c47b3a;
+        font-size: 16px;
+    }
+
+/* FILA FLEX PRINCIPAL */
+.form-row {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+}
+
+/* COLUMNAS */
+.form-col {
+    flex: 1;
+}
+
+/* BOTONES */
+.form-buttons {
+    display: flex;
+    justify-content: center;
+    margin-top: 25px;
+    gap: 20px;
+}
+
+.btn-mesero {
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-size: 16px;
+    border: none;
+    cursor: pointer;
+    min-width: 140px;
+}
+
+.btn-guardar {
+    background: #c46c2f;
+    color: white;
+}
+
+.btn-cancelar {
+    background: #d8d8d8;
+}
+
+/* ============================
+     RESPONSIVE
+   ============================ */
+
+@media (max-width: 900px) {
+
+    .form-row {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .form-mesero {
+        padding: 20px;
+    }
+
+    .form-buttons {
+        flex-direction: column;
+    }
+
+    .btn-mesero {
+        width: 100%;
+    }
+}
+
+@media (max-width: 500px) {
+
+    .form-mesero h2 {
+        font-size: 20px;
+    }
+
+    .form-mesero {
+        padding: 15px;
+    }
+
+    input, select {
+        font-size: 15px;
+        padding: 10px 12px;
+    }
+}
