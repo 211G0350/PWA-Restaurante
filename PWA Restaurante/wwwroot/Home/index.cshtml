@@ -97,6 +97,7 @@
             btnLogin.textContent = 'Iniciando sesión...';
 
             try {
+                // si se harán pruebas en local, cambiar "pwa-restaurante.conveyor.cloud" por "localhost:7209"
                 const response = await fetch('https://pwa-restaurante.conveyor.cloud/api/Usuarios/Login', {
                     method: 'POST',
                     headers: {
