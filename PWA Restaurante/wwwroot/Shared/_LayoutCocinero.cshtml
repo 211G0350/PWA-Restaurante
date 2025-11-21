@@ -1,10 +1,10 @@
-﻿
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Panel Cocina</title>
+    <link rel="manifest" href="/manifest.json">
     <link rel="stylesheet" href="~/css/panelCocina.css" />
 </head>
 <body>
@@ -139,6 +139,18 @@
 		})();
 
 		document.addEventListener("DOMContentLoaded", mostrarNombreUsuario);
+
+		if ('serviceWorker' in navigator) {
+			window.addEventListener('load', function() {
+				navigator.serviceWorker.register('/serviceworker.js')
+					.then(function(registration) {
+						console.log('Service Worker registrado exitosamente:', registration.scope);
+					})
+					.catch(function(error) {
+						console.error('Error al registrar Service Worker:', error);
+					});
+			});
+		}
 	</script>
 </body>
 </html>

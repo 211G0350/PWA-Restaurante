@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema Restaurante</title>
+    <link rel="manifest" href="/manifest.json">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="/css/Home.css" rel="stylesheet" />
 </head>
@@ -192,6 +193,19 @@
                 realizarLogin();
             }
         });
+
+        // registrar service worker, donde se ocupe para que luego checar
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/serviceworker.js')
+                    .then(function(registration) {
+                        console.log('Service Worker registrado exitosamente:', registration.scope);
+                    })
+                    .catch(function(error) {
+                        console.error('Error al registrar Service Worker:', error);
+                    });
+            });
+        }
     </script>
 </body>
 </html>

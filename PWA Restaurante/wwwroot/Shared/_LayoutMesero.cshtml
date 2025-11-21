@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Panel Mesero</title>
-
+    <link rel="manifest" href="/manifest.json">
     <link rel="stylesheet" href="~/css/mes.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
@@ -173,6 +173,18 @@
 		})();
 
 		document.addEventListener("DOMContentLoaded", mostrarNombreUsuario);
+
+		if ('serviceWorker' in navigator) {
+			window.addEventListener('load', function() {
+				navigator.serviceWorker.register('/serviceworker.js')
+					.then(function(registration) {
+						console.log('Service Worker registrado exitosamente:', registration.scope);
+					})
+					.catch(function(error) {
+						console.error('Error al registrar Service Worker:', error);
+					});
+			});
+		}
 	</script>
 </body>
 </html>
