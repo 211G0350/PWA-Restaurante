@@ -6,6 +6,8 @@ using PWA_Restaurante.Models.Entities;
 using PWA_Restaurante.Repositories;
 using PWA_Restaurante.Models.Validators;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.SignalR;
+using PWA_Restaurante.Services;
 
 namespace PWA_Restaurante.Controllers
 {
@@ -17,13 +19,15 @@ namespace PWA_Restaurante.Controllers
 		private readonly Repository<PedidoDetalles> _pedidoDetallesRepository;
 		private readonly ProductosValidator _validator;
 		private readonly IWebHostEnvironment _hostEnvironment;
+		private readonly IHubContext<PedidosHub> _hubContext;
 
-		public ProductosController(Repository<Productos> repository, Repository<PedidoDetalles> pedidoDetallesRepository, ProductosValidator validator, IWebHostEnvironment hostEnvironment)
+		public ProductosController(Repository<Productos> repository, Repository<PedidoDetalles> pedidoDetallesRepository, ProductosValidator validator, IWebHostEnvironment hostEnvironment, IHubContext<PedidosHub> hubContext)
 		{
 			_repository = repository;
 			_pedidoDetallesRepository = pedidoDetallesRepository;
 			_validator = validator;
 			_hostEnvironment = hostEnvironment;
+			_hubContext = hubContext;
 		}
 
 		[HttpGet("Todos")]
@@ -94,7 +98,7 @@ namespace PWA_Restaurante.Controllers
 
 		[HttpPost("AgregarProducto")]
 		[Authorize(Roles = "Admin")]
-		public IActionResult AgregarProducto([FromForm] AgregarProductoDTO dto, IFormFile archivo)
+		public async Task<IActionResult> AgregarProducto([FromForm] AgregarProductoDTO dto, IFormFile archivo)
 		{
 			if (_validator.ValidateAgregar(dto, out List<string> errores))
 			{
@@ -144,6 +148,15 @@ namespace PWA_Restaurante.Controllers
 					? "Producto agregado exitosamente" 
 					: $"Producto agregado exitosamente. Nueva categoría '{dto.Categoria}' creada automáticamente";
 				
+				await _hubContext.Clients.All.SendAsync("ProductoAgregado", new
+				{
+					productoId = producto.Id,
+					nombre = producto.Nombre,
+					categoria = producto.Categoria,
+					precio = producto.Precio,
+					activo = producto.Activo
+				});
+				
 				return Ok(new { message = mensaje, id = producto.Id });
 			}
 			else
@@ -154,7 +167,7 @@ namespace PWA_Restaurante.Controllers
 
 		[HttpPut("Editar/{id}")]
 		[Authorize(Roles = "Admin")]
-		public IActionResult EditarProducto(int id, [FromForm] EditarProductoDTO dto, IFormFile? archivo)
+		public async Task<IActionResult> EditarProducto(int id, [FromForm] EditarProductoDTO dto, IFormFile? archivo)
 		{
 			if (dto == null || string.IsNullOrEmpty(dto.Nombre))
 			{
@@ -239,6 +252,15 @@ namespace PWA_Restaurante.Controllers
 					}
 				}
 
+				await _hubContext.Clients.All.SendAsync("ProductoEditado", new
+				{
+					productoId = productoExistente.Id,
+					nombre = productoExistente.Nombre,
+					categoria = productoExistente.Categoria,
+					precio = productoExistente.Precio,
+					activo = productoExistente.Activo
+				});
+
 				return Ok(new { message = "Producto actualizado exitosamente" });
 			}
 			else
@@ -249,7 +271,7 @@ namespace PWA_Restaurante.Controllers
 
 		[HttpDelete("EliminarProducto/{id}")]
 		[Authorize(Roles = "Admin")]
-		public IActionResult EliminarProducto(int id)
+		public async Task<IActionResult> EliminarProducto(int id)
 		{
 			if (!_validator.ValidateEliminar(id, out List<string> errores))
 			{
@@ -270,6 +292,7 @@ namespace PWA_Restaurante.Controllers
 				return BadRequest(new { message = "No se puede eliminar el producto porque está asociado a uno o más pedidos." });
 			}
 
+			var categoriaEliminada = producto.Categoria;
 			_repository.Delete(producto.Id);
 
 			try
@@ -284,6 +307,12 @@ namespace PWA_Restaurante.Controllers
 			{
 
 			}
+
+			await _hubContext.Clients.All.SendAsync("ProductoEliminado", new
+			{
+				productoId = producto.Id,
+				categoria = categoriaEliminada
+			});
 
 			return Ok(new { message = "Producto eliminado permanentemente" });
 		}

@@ -457,5 +457,74 @@
                     });
                 });
             }
+
+            (function inicializarSignalRProductos() {
+                if (!window.signalR) {
+                    console.warn('SignalR no está disponible');
+                    return;
+                }
+
+                let connection = null;
+                if (window.pedidosHubClient && window.pedidosHubClient.connection) {
+                    connection = window.pedidosHubClient.connection;
+                } else {
+                    const obtenerToken = () => sessionStorage.getItem('token') || localStorage.getItem('token') || '';
+                    connection = new signalR.HubConnectionBuilder()
+                        .withUrl('/pedidosHub', {
+                            accessTokenFactory: () => obtenerToken()
+                        })
+                        .withAutomaticReconnect()
+                        .build();
+
+                    const iniciarConexion = async () => {
+                        if (connection.state === signalR.HubConnectionState.Connected || 
+                            connection.state === signalR.HubConnectionState.Connecting) {
+                            return;
+                        }
+
+                        try {
+                            await connection.start();
+                            await connection.invoke('JoinMeserosGroup');
+                            console.log('SignalR conectado para productos en crear orden');
+                        } catch (error) {
+                            console.error('Error al conectar SignalR:', error);
+                            setTimeout(iniciarConexion, 3000);
+                        }
+                    };
+
+                    document.addEventListener('DOMContentLoaded', () => {
+                        if (getAuthToken()) {
+                            iniciarConexion();
+                        }
+                    });
+                }
+
+                connection.on('ProductoAgregado', async (data) => {
+                    console.log('Producto agregado:', data);
+                    if (data.activo && state.categoriaActiva === data.categoria) {
+                        state.cacheProductos.delete(data.categoria);
+                        await seleccionarTab(data.categoria);
+                    }
+                    await cargarCategorias();
+                });
+
+                connection.on('ProductoEditado', async (data) => {
+                    console.log('Producto editado:', data);
+                    if (state.categoriaActiva === data.categoria) {
+                        state.cacheProductos.delete(data.categoria);
+                        await seleccionarTab(data.categoria);
+                    }
+                    await cargarCategorias();
+                });
+
+                connection.on('ProductoEliminado', async (data) => {
+                    console.log('Producto eliminado:', data);
+                    if (state.categoriaActiva === data.categoria) {
+                        state.cacheProductos.delete(data.categoria);
+                        await seleccionarTab(data.categoria);
+                    }
+                    await cargarCategorias();
+                });
+            })();
         });
     </script>

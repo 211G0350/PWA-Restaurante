@@ -275,7 +275,7 @@ main {
 form {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 0px;
 }
 
 .form-group {
@@ -300,7 +300,7 @@ label {
 
 input, select, textarea {
     width: 100%;
-    padding: 10px;
+    padding: 0px;
     border: 2px solid #b46525;
     border-radius: 8px;
     background-color: #fff;
@@ -380,6 +380,7 @@ textarea {
         color: #333;
         font-size: 16px;
     }
+
 .modal-editar, .modal-eliminar {
     background-color: #f8d19b;
     border: 2px solid #b46d3c;
@@ -461,6 +462,7 @@ textarea {
     margin-left: 10px;
     cursor: pointer;
 }
+
 .preview-container {
     display: flex;
     justify-content: center;
@@ -550,7 +552,7 @@ textarea {
 
     .form-row {
         flex-direction: column;
-        gap: 10px;
+        gap: 0px;
     }
 
     /* IMAGEN CENTRAL */
@@ -558,4 +560,3 @@ textarea {
         width: 140px;
         height: 140px;
     }
-}

@@ -105,6 +105,40 @@ namespace PWA_Restaurante.Services
 			await Clients.All.SendAsync("ActualizarPedidos");
 		}
 
+		// Notificaciones para productos
+		public async Task NotificarProductoAgregado(int productoId, string nombre, string categoria, decimal precio, bool activo)
+		{
+			await Clients.All.SendAsync("ProductoAgregado", new
+			{
+				productoId,
+				nombre,
+				categoria,
+				precio,
+				activo
+			});
+		}
+
+		public async Task NotificarProductoEditado(int productoId, string nombre, string categoria, decimal precio, bool activo)
+		{
+			await Clients.All.SendAsync("ProductoEditado", new
+			{
+				productoId,
+				nombre,
+				categoria,
+				precio,
+				activo
+			});
+		}
+
+		public async Task NotificarProductoEliminado(int productoId, string categoria)
+		{
+			await Clients.All.SendAsync("ProductoEliminado", new
+			{
+				productoId,
+				categoria
+			});
+		}
+
 		public string GetConnectionId()
 		{
 			return Context.ConnectionId;
