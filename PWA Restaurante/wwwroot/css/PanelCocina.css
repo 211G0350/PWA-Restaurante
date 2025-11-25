@@ -130,7 +130,7 @@ body {
 
 .btn-ver,
 .btn-comenzar {
-    padding: 5px 10px;
+    padding: 0px 0px;
     border-radius: 8px;
     border: none;
     cursor: pointer;
@@ -352,7 +352,7 @@ body {
     background-color: #d9534f; /* rojo cálido */
     color: white;
     border: none;
-    padding: 6px 12px;
+    padding: 0px 0px;
     border-radius: 8px;
     font-weight: bold;
     cursor: pointer;
@@ -375,3 +375,55 @@ body {
         cursor: not-allowed;
         transform: none;
     }
+    /* === FIX RESPONSIVE PARA QUE NO SE DEFORME === */
+
+/* Corrige el contenedor principal */
+.main-container {
+    max-width: 100%;
+    width: 100%;
+    overflow-x: auto; /* Evita compresión */
+    box-sizing: border-box;
+}
+
+/* Ajuste de columnas */
+.columnas {
+    display: flex;
+    gap: 10px;
+    width: max-content; /* Evita que las columnas se aplasten */
+}
+
+/* Cada tarjeta */
+.columna {
+    min-width: 280px; /* tamaño ideal para móvil */
+    max-width: 350px;
+}
+
+/* Header responsive */
+.header-cocina {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* Botones */
+.header-cocina button {
+    flex-shrink: 0;
+}
+
+/* Tarjetas: mejor adaptación */
+.tarjeta {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Reduce padding en móviles */
+@media (max-width: 600px) {
+    body {
+        padding: 0;
+        margin: 0;
+    }
+
+    .main-container {
+        padding: 5px;
+    }
+}
