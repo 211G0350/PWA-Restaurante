@@ -209,59 +209,67 @@ namespace PWA_Restaurante.Controllers
 			}
 			
 			if (_validator.ValidateEditar(dto, out List<string> errores))
+		{
+			var productoExistente = _repository.GetByIdWithTracking(id);
+			
+			if (productoExistente == null)
 			{
-				var productoExistente = _repository.GetByIdWithTracking(id);
-				
-				if (productoExistente == null)
+				return NotFound("Producto no encontrado");
+			}
+
+			var tienePedidos = _pedidoDetallesRepository.GetAll()
+				.Any(pd => pd.ProductoId == id);
+
+			if (tienePedidos)
+			{
+				return BadRequest(new { message = "No se puede editar el producto porque está asociado a uno o más pedidos." });
+			}
+
+			productoExistente.Nombre = dto.Nombre;
+			productoExistente.Precio = dto.Precio;
+			productoExistente.Categoria = dto.Categoria;
+			productoExistente.Descripcion = dto.Descripcion;
+			productoExistente.TiempoPreparacion = dto.TiempoPreparacion;
+			productoExistente.ImagenProducto = dto.ImagenProducto;
+			productoExistente.Activo = dto.Activo;
+
+			_repository.Update(productoExistente);
+
+			if (archivo != null)
+			{
+				if (archivo.ContentType != "image/jpeg")
 				{
-					return NotFound("Producto no encontrado");
+					return BadRequest(new { message = "Solo están permitidas imagenes .jpg" });
 				}
 
-				productoExistente.Nombre = dto.Nombre;
-				productoExistente.Precio = dto.Precio;
-				productoExistente.Categoria = dto.Categoria;
-				productoExistente.Descripcion = dto.Descripcion;
-				productoExistente.TiempoPreparacion = dto.TiempoPreparacion;
-				productoExistente.ImagenProducto = dto.ImagenProducto;
-				productoExistente.Activo = dto.Activo;
-
-				_repository.Update(productoExistente);
-
-				if (archivo != null)
+				if (archivo.Length > 1024 * 1024 * 5)
 				{
-					if (archivo.ContentType != "image/jpeg")
-					{
-						return BadRequest(new { message = "Solo están permitidas imagenes .jpg" });
-					}
-
-					if (archivo.Length > 1024 * 1024 * 5)
-					{
-						return BadRequest(new { message = "No se permiten imagenes mayores a 5MB" });
-					}
-
-					var ruta = Path.Combine(_hostEnvironment.WebRootPath, "Img", dto.Id + ".jpg");
-					var directory = Path.GetDirectoryName(ruta);
-					if (!Directory.Exists(directory))
-					{
-						Directory.CreateDirectory(directory);
-					}
-
-					using (FileStream fs = new FileStream(ruta, FileMode.Create))
-					{
-						archivo.CopyTo(fs);
-					}
+					return BadRequest(new { message = "No se permiten imagenes mayores a 5MB" });
 				}
 
-				await _hubContext.Clients.All.SendAsync("ProductoEditado", new
+				var ruta = Path.Combine(_hostEnvironment.WebRootPath, "Img", dto.Id + ".jpg");
+				var directory = Path.GetDirectoryName(ruta);
+				if (!Directory.Exists(directory))
 				{
-					productoId = productoExistente.Id,
-					nombre = productoExistente.Nombre,
-					categoria = productoExistente.Categoria,
-					precio = productoExistente.Precio,
-					activo = productoExistente.Activo
-				});
+					Directory.CreateDirectory(directory);
+				}
 
-				return Ok(new { message = "Producto actualizado exitosamente" });
+				using (FileStream fs = new FileStream(ruta, FileMode.Create))
+				{
+					archivo.CopyTo(fs);
+				}
+			}
+
+			await _hubContext.Clients.All.SendAsync("ProductoEditado", new
+			{
+				productoId = productoExistente.Id,
+				nombre = productoExistente.Nombre,
+				categoria = productoExistente.Categoria,
+				precio = productoExistente.Precio,
+				activo = productoExistente.Activo
+			});
+
+			return Ok(new { message = "Producto actualizado exitosamente" });
 			}
 			else
 			{

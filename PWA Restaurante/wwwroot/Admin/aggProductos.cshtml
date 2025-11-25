@@ -143,56 +143,67 @@
         document.addEventListener('DOMContentLoaded', cargarCategorias);
 
         (function inicializarSignalRProductos() {
-            if (!window.signalR) {
-                console.warn('SignalR no está disponible');
-                return;
-            }
-
             const obtenerToken = () => localStorage.getItem('token') || sessionStorage.getItem('token') || '';
 
-            const connection = new signalR.HubConnectionBuilder()
-                .withUrl('/pedidosHub', {
-                    accessTokenFactory: () => obtenerToken()
-                })
-                .withAutomaticReconnect()
-                .build();
-
-            connection.on('ProductoAgregado', (data) => {
-                console.log('Producto agregado desde otra ventana:', data);
-                cargarCategorias();
-            });
-
-            connection.on('ProductoEditado', (data) => {
-                console.log('Producto editado desde otra ventana:', data);
-                cargarCategorias();
-            });
-
-            connection.on('ProductoEliminado', (data) => {
-                console.log('Producto eliminado desde otra ventana:', data);
-                cargarCategorias();
-            });
-
-            const iniciarConexion = async () => {
-                if (connection.state === signalR.HubConnectionState.Connected || 
-                    connection.state === signalR.HubConnectionState.Connecting) {
+            const inicializarCuandoEsteListo = () => {
+                if (typeof signalR === 'undefined') {
+                    console.warn('SignalR aún no está disponible, reintentando...');
+                    setTimeout(inicializarCuandoEsteListo, 100);
                     return;
                 }
 
-                try {
-                    await connection.start();
-                    await connection.invoke('JoinAdminGroup');
-                    console.log('SignalR conectado para productos');
-                } catch (error) {
-                    console.error('Error al conectar SignalR:', error);
-                    setTimeout(iniciarConexion, 3000);
+                const connection = new signalR.HubConnectionBuilder()
+                    .withUrl('/pedidosHub', {
+                        accessTokenFactory: () => obtenerToken()
+                    })
+                    .withAutomaticReconnect()
+                    .build();
+
+                connection.on('ProductoAgregado', (data) => {
+                    console.log('Producto agregado desde otra ventana:', data);
+                    cargarCategorias();
+                });
+
+                connection.on('ProductoEditado', (data) => {
+                    console.log('Producto editado desde otra ventana:', data);
+                    cargarCategorias();
+                });
+
+                connection.on('ProductoEliminado', (data) => {
+                    console.log('Producto eliminado desde otra ventana:', data);
+                    cargarCategorias();
+                });
+
+                const iniciarConexion = async () => {
+                    if (connection.state === signalR.HubConnectionState.Connected || 
+                        connection.state === signalR.HubConnectionState.Connecting) {
+                        return;
+                    }
+
+                    try {
+                        await connection.start();
+                        await connection.invoke('JoinAdminGroup');
+                        console.log('SignalR conectado para productos (aggProductos)');
+                    } catch (error) {
+                        console.error('Error al conectar SignalR:', error);
+                        setTimeout(iniciarConexion, 3000);
+                    }
+                };
+
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', () => {
+                        if (obtenerToken()) {
+                            iniciarConexion();
+                        }
+                    });
+                } else {
+                    if (obtenerToken()) {
+                        iniciarConexion();
+                    }
                 }
             };
 
-            document.addEventListener('DOMContentLoaded', () => {
-                if (obtenerToken()) {
-                    iniciarConexion();
-                }
-            });
+            inicializarCuandoEsteListo();
         })();
     </script>
 

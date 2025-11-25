@@ -354,10 +354,13 @@
             function actualizarSubtotalUI(productoId) {
                 const itemEl = ui.resumenItems?.querySelector(`.order-item[data-producto-id="${productoId}"]`);
                 const priceEl = itemEl?.querySelector('.item-price');
+                const titleEl = itemEl?.querySelector('.item-title');
                 const item = state.pedido.get(productoId);
-                if (priceEl && item) {
-                    const subtotal = item.precio * item.cantidad;
-                    priceEl.textContent = `Subtotal: $${subtotal.toFixed(2)}`;
+                if (itemEl && item) {
+                    if (priceEl) {
+                        const subtotal = item.precio * item.cantidad;
+                        priceEl.textContent = `Subtotal: $${subtotal.toFixed(2)}`;
+                    }
                 }
             }
 
@@ -510,6 +513,27 @@
 
                 connection.on('ProductoEditado', async (data) => {
                     console.log('Producto editado:', data);
+                    
+                    if (data.productoId && state.productosPorId.has(data.productoId)) {
+                        const producto = state.productosPorId.get(data.productoId);
+                        if (producto) {
+                            if (typeof data.precio === 'number') {
+                                producto.precio = data.precio;
+                            }
+                            state.productosPorId.set(data.productoId, producto);
+                        }
+                    }
+                    
+                    if (data.productoId && state.pedido.has(data.productoId)) {
+                        const item = state.pedido.get(data.productoId);
+                        if (item && typeof data.precio === 'number') {
+                            item.precio = data.precio;
+                            state.pedido.set(data.productoId, item);
+                            actualizarSubtotalUI(data.productoId);
+                            actualizarTotal();
+                        }
+                    }
+                    
                     if (state.categoriaActiva === data.categoria) {
                         state.cacheProductos.delete(data.categoria);
                         await seleccionarTab(data.categoria);
