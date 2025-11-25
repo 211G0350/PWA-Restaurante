@@ -1,6 +1,6 @@
 ﻿
 
-const cacheName = "pwa-restaurante-v1";
+const cacheName = "pwa-restaurante-v2";
 
 const urlsAlCache = [
     //vistas
@@ -67,7 +67,31 @@ self.addEventListener("activate", function (event) {
     );
 });
 
-// cache first todo lo estatico
+async function networkFirst(pedido) {
+    try {
+        const RespuestaNet = await fetch(pedido);
+        
+        if (RespuestaNet.ok) {
+            const cache = await caches.open(cacheName);
+            cache.put(pedido, RespuestaNet.clone());
+        }
+        
+        return RespuestaNet;
+    } catch (error) {
+        console.warn("Red no disponible, usando caché:", error);
+        const cache = await caches.open(cacheName);
+        const cacheRespuesta = await cache.match(pedido);
+        
+        if (cacheRespuesta) {
+            return cacheRespuesta;
+        }
+        
+        return new Response("Recurso no disponible", { 
+            status: 503 
+        });
+    }
+}
+
 async function cacheFirst(pedido) {
     try {
         const cache = await caches.open(cacheName);
@@ -96,25 +120,25 @@ self.addEventListener("fetch", function (event) {
     const url = new URL(event.request.url);
     const pathname = url.pathname;
     
-    // aun no pasar a cache los fetch api, pasar directamente a la red
+    // APIs no van a caché aun, pasar directamente a la red
     if (pathname.startsWith("/api/")) {
         return;
     }
     
-    let irCache = false;  
-    if (urlsAlCache.includes(pathname)) {
-        irCache = true;
+    if (pathname.startsWith("/css/") && pathname.endsWith(".css")) {
+        event.respondWith(networkFirst(event.request));
+        return;
     }
-    else if (pathname === "/" || 
-             pathname.startsWith("/Admin/") || 
-             pathname.startsWith("/Mesero/") || 
-             pathname.startsWith("/Cociner/")) {
-        irCache = true;
+    
+    if (pathname === "/" || 
+        pathname.startsWith("/Admin/") || 
+        pathname.startsWith("/Mesero/") || 
+        pathname.startsWith("/Cociner/")) {
+        event.respondWith(networkFirst(event.request));
+        return;
     }
-    else if (pathname.startsWith("/css/") && pathname.endsWith(".css")) {
-        irCache = true;
-    }
-    else if (pathname.startsWith("/Img/")) {
+    
+    if (pathname.startsWith("/Img/")) {
         const img = pathname.split("/").pop();
         const imgSistema = [
             "chef.png", 
@@ -127,11 +151,11 @@ self.addEventListener("fetch", function (event) {
             "usuarios.png"
         ];
         if (imgSistema.includes(img)) {
-            irCache = true;
+            event.respondWith(cacheFirst(event.request));
+            return;
         }
     }
-
-    if (irCache) {
+        if (urlsAlCache.includes(pathname)) {
         event.respondWith(cacheFirst(event.request));
     }
 });
