@@ -1,6 +1,7 @@
 ﻿
 
 const cacheName = "pwa-restaurante-v2";
+const apiCacheName = "pwa-restaurante-api-v1";
 
 const urlsAlCache = [
     //vistas
@@ -56,7 +57,8 @@ self.addEventListener("activate", function (event) {
         caches.keys().then(function (todoCache) {
             return Promise.all(
                 todoCache.map(function (nomCache) {
-                    if (nomCache !== cacheName) {
+                    // Mantener solo los caches actuales, eliminar los antiguos
+                    if (nomCache !== cacheName && nomCache !== apiCacheName) {
                         return caches.delete(nomCache);
                     }
                 })
@@ -92,6 +94,36 @@ async function networkFirst(pedido) {
     }
 }
 
+// caché separado para respuestas get de la api
+async function networkFirstAPI(pedido) {
+    try {
+        const RespuestaNet = await fetch(pedido);
+        
+        if (RespuestaNet.ok) {
+            const apiCache = await caches.open(apiCacheName);
+            apiCache.put(pedido, RespuestaNet.clone());
+        }
+        
+        return RespuestaNet;
+    } catch (error) {
+        console.warn("Red no disponible para API, usando caché:", error);
+        const apiCache = await caches.open(apiCacheName);
+        const cacheRespuesta = await apiCache.match(pedido);
+        
+        if (cacheRespuesta) {
+            return cacheRespuesta;
+        }
+        
+        return new Response(JSON.stringify({ 
+            error: "Sin conexión y sin datos en caché",
+            message: "No se pudo obtener el recurso y no hay versión en caché"
+        }), { 
+            status: 503,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+}
+
 async function cacheFirst(pedido) {
     try {
         const cache = await caches.open(cacheName);
@@ -119,8 +151,14 @@ async function cacheFirst(pedido) {
 self.addEventListener("fetch", function (event) {
     const url = new URL(event.request.url);
     const pathname = url.pathname;
+    const method = event.request.method;
     
-    // APIs no van a caché aun, pasar directamente a la red
+    if (pathname.startsWith("/api/") && method === "GET") {
+        event.respondWith(networkFirstAPI(event.request));
+        return;
+    }
+    
+    // cuando es fetch post/put/delete aun no cachear, quiero sincronziar checar despues
     if (pathname.startsWith("/api/")) {
         return;
     }
