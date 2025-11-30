@@ -1,5 +1,4 @@
 ﻿
-
 const cacheName = "pwa-restaurante-v2";
 const apiCacheName = "pwa-restaurante-api-v1";
 
@@ -153,47 +152,176 @@ self.addEventListener("fetch", function (event) {
     const pathname = url.pathname;
     const method = event.request.method;
     
-    if (pathname.startsWith("/api/") && method === "GET") {
-        event.respondWith(networkFirstAPI(event.request));
-        return;
-    }
-    
-    // cuando es fetch post/put/delete aun no cachear, quiero sincronziar checar despues
-    if (pathname.startsWith("/api/")) {
-        return;
-    }
-    
-    if (pathname.startsWith("/css/") && pathname.endsWith(".css")) {
-        event.respondWith(networkFirst(event.request));
-        return;
-    }
-    
-    if (pathname === "/" || 
-        pathname.startsWith("/Admin/") || 
-        pathname.startsWith("/Mesero/") || 
-        pathname.startsWith("/Cociner/")) {
-        event.respondWith(networkFirst(event.request));
-        return;
-    }
-    
-    if (pathname.startsWith("/Img/")) {
-        const img = pathname.split("/").pop();
-        const imgSistema = [
-            "chef.png", 
-            "default.jpg", 
-            "opcion-de-cerrar-sesion.png", 
-            "renderindex.png", 
-            "restaurante.png", 
-            "sincronizar.png", 
-            "usuario.png", 
-            "usuarios.png"
-        ];
-        if (imgSistema.includes(img)) {
-            event.respondWith(cacheFirst(event.request));
+    if (method === "GET") {
+        if (pathname.startsWith("/api/")) {
+            event.respondWith(networkFirstAPI(event.request));
+            return;
+        }
+        else {
+            if (pathname.startsWith("/css/") && pathname.endsWith(".css")) {
+                event.respondWith(networkFirst(event.request));
+                return;
+            }
+            
+            if (pathname === "/" || 
+                pathname.startsWith("/Admin/") || 
+                pathname.startsWith("/Mesero/") || 
+                pathname.startsWith("/Cociner/")) {
+                event.respondWith(networkFirst(event.request));
+                return;
+            }
+            
+            if (pathname.startsWith("/Img/")) {
+                const img = pathname.split("/").pop();
+                const imgSistema = [
+                    "chef.png", 
+                    "default.jpg", 
+                    "opcion-de-cerrar-sesion.png", 
+                    "renderindex.png", 
+                    "restaurante.png", 
+                    "sincronizar.png", 
+                    "usuario.png", 
+                    "usuarios.png"
+                ];
+                if (imgSistema.includes(img)) {
+                    event.respondWith(cacheFirst(event.request));
+                    return;
+                }
+            }
+            
+            if (urlsAlCache.includes(pathname)) {
+                event.respondWith(cacheFirst(event.request));
+                return;
+            }
+        }
+    } else {
+        if (pathname.startsWith("/api/")) {
+            event.respondWith(manejarModificaciones(event.request));
             return;
         }
     }
-        if (urlsAlCache.includes(pathname)) {
-        event.respondWith(cacheFirst(event.request));
+});
+
+// todo lo que irá aindexedDB desde aqui
+async function openDatabase() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open('pwa-restaurante-sync', 1);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains('pendientes')) {
+                const store = db.createObjectStore('pendientes', {
+                    keyPath: 'id',
+                    autoIncrement: true
+                });
+            }
+        };
+    });
+}
+
+async function agregarObjeto(storeName, objeto) {
+    const db = await openDatabase();
+    const transaction = db.transaction(storeName, 'readwrite');
+    const store = transaction.objectStore(storeName);
+    const request = store.add(objeto);
+    return new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function obtenerTodos(storeName) {
+    const db = await openDatabase();
+    const transaction = db.transaction(storeName, 'readonly');
+    const store = transaction.objectStore(storeName);
+    const request = store.getAll();
+    return new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function eliminarObjeto(storeName, id) {
+    const db = await openDatabase();
+    const transaction = db.transaction(storeName, 'readwrite');
+    const store = transaction.objectStore(storeName);
+    const request = store.delete(id);
+    return new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+    });
+}
+
+// que el plan que si se hacen cambios offline se queden guardadon
+//y se vayan a poner cuando regrese la conexion
+async function manejarModificaciones(request) {
+    let clon = request.clone();
+    try {
+        return await fetch(request);
+    } catch (error) {
+        let objeto = {
+            method: request.method,
+            url: request.url,
+            headers: Array.from(request.headers.entries())
+        };
+
+        if (request.method === "POST" || request.method === "PUT") {
+            let datos = await clon.text();
+            objeto.body = datos;
+        } else {
+            objeto.body = null;
+        }
+
+        await agregarObjeto("pendientes", objeto);
+
+
+
+        if ('sync' in self.registration) {
+            try {
+                await self.registration.sync.register('pwa-restaurante-sync');
+            } catch (syncError) {
+                console.warn('No se pudo registrar sync:', syncError);
+            }
+        }
+
+        return new Response(null, { status: 200 });
+    }
+}
+
+async function enviarAlReconectar() {
+    let pendientes = await obtenerTodos("pendientes");
+
+    for (let p of pendientes) {
+        try {
+            let headersObj = {};
+            p.headers.forEach(([key, value]) => {
+                headersObj[key] = value;
+            });
+
+            let response = await fetch(p.url, {
+                method: p.method,
+                headers: headersObj,
+                body: p.method === "DELETE" ? null : p.body
+            });
+
+            if (response.ok) {
+                await eliminarObjeto("pendientes", p.id);
+                console.log('Acción sincronizada exitosamente:', p.method, p.url);
+            } else {
+                console.warn('Error al sincronizar acción:', p.method, p.url, response.status);
+                break;
+            }
+        } catch (error) {
+            console.error('Error al sincronizar:', error);
+            break; 
+        }
+    }
+}
+
+self.addEventListener("sync", function (event) {
+    if (event.tag === "pwa-restaurante-sync") {
+        event.waitUntil(enviarAlReconectar());
     }
 });
