@@ -168,6 +168,13 @@
                     rol: rol
                 }));
 
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({
+                        type: 'PRECARGAR_APIS',
+                        token: token
+                    });
+                }
+
                 if (rol.toLowerCase() === 'admin') {
                     window.location.href = '/Admin/panelAdmin';
                 } else if (rol.toLowerCase() === 'mesero') {
