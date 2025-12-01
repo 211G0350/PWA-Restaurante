@@ -1,6 +1,7 @@
 {
   "name": "PWA Restaurante",
   "short_name": "Restaurant-PWA",
+  "description": "Sistema de gestión de restaurante con funcionalidad offline",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
