@@ -2,8 +2,7 @@
 const cacheName = "pwa-restaurante-v2";
 const apiCacheName = "pwa-restaurante-api-v1";
 
-const urlsAlCache = [
-    //vistas
+const todasLasVistas = [
     "/", 
     "/Admin/panelAdmin",
     "/Admin/adminProducts",
@@ -14,8 +13,10 @@ const urlsAlCache = [
     "/Mesero/detalleordenDato",
     "/Mesero/EditarPendiente",
     "/Mesero/EliminarPeniente",
-    "/Cociner/panelCocina",
-    //todo lo css
+    "/Cociner/panelCocina"
+];
+
+const todosLosCSS = [
     "/css/Admin.css",
     "/css/AdminUsuarios.css",
     "/css/Admincss/AdminProductos.css",
@@ -25,8 +26,10 @@ const urlsAlCache = [
     "/css/mes.css",
     "/css/Mesero.css",
     "/css/PanelCocina.css",
-    "/css/Shared.css",
-    // imagenes que ocupamos
+    "/css/Shared.css"
+];
+
+const imagenesSistema = [
     "/Img/chef.png",
     "/Img/default.jpg",
     "/Img/opcion-de-cerrar-sesion.png",
@@ -35,6 +38,12 @@ const urlsAlCache = [
     "/Img/sincronizar.png",
     "/Img/usuario.png",
     "/Img/usuarios.png"
+];
+
+const urlsAlCache = [
+    ...todasLasVistas,
+    ...todosLosCSS,
+    ...imagenesSistema
 ];
 
 
@@ -59,18 +68,55 @@ async function precargarAPIsPublicas() {
     }
 }
 
+// Función para cachear un recurso individualmente (no detiene el proceso si falla)
+async function cachearRecursoIndividual(cache, url) {
+    try {
+        const response = await fetch(url);
+        if (response.ok) {
+            await cache.put(url, response.clone());
+            console.log('Recurso cacheado:', url);
+            return true;
+        } else {
+            console.warn('No se pudo cachear:', url, response.status);
+            return false;
+        }
+    } catch (error) {
+        console.warn('No se pudo cachear(error de red):', url, error.message);
+        return false;
+    }
+}
+
+// intentar que todas vistas y css se tengan en cache al instalar, para el todo offline
+async function cachearTodosLosRecursos() {
+    const cache = await caches.open(cacheName);
+    const baseUrl = self.location.origin;
+    const todosLosRecursos = [...todasLasVistas, ...todosLosCSS, ...imagenesSistema];    
+    console.log('Iniciando cacheo de recursos durante instalación...');
+    
+    const resultados = await Promise.allSettled(
+        todosLosRecursos.map(recurso => {
+            const url = new URL(recurso, baseUrl).href;
+            return cachearRecursoIndividual(cache, url);
+        })
+    );
+    
+    const exitosos = resultados.filter(r => r.status === 'fulfilled' && r.value === true).length;
+    const fallidos = resultados.length - exitosos;    
+    console.log(`Cacheo completado: ${exitosos} exitosos, ${fallidos} fallidos de ${todosLosRecursos.length} recursos`);    
+    return exitosos;
+}
+
 // instalar service worker
 self.addEventListener("install", function (event) {
     event.waitUntil(
         Promise.all([
-            // Cachear recursos estáticos
-            caches.open(cacheName).then(function (cache) {
-                return cache.addAll(urlsAlCache).catch(function (error) {
-                    console.error("Error al cachear recursos:", error);
-                });
-            }),
+            cachearTodosLosRecursos(),
             precargarAPIsPublicas()
         ]).then(function () {
+            console.log('Service Worker instalado');
+            return self.skipWaiting();
+        }).catch(function (error) {
+            console.error("Error durante instalación:", error);
             return self.skipWaiting();
         })
     );
@@ -121,8 +167,7 @@ async function networkFirst(pedido) {
 async function cacheFirstAPI(pedido) {
     try {
         const apiCache = await caches.open(apiCacheName);       
-        const cacheRespuesta = await apiCache.match(pedido, { ignoreSearch: false, ignoreMethod: false, ignoreVary: true });
-        
+        const cacheRespuesta = await apiCache.match(pedido, { ignoreSearch: false, ignoreMethod: false, ignoreVary: true });       
         if (cacheRespuesta) {
             fetch(pedido).then(respuestaNet => {
                 if (respuestaNet.ok) {
@@ -380,21 +425,40 @@ async function enviarAlReconectar() {
         }
     }
 }
-
 self.addEventListener("sync", function (event) {
     if (event.tag === "pwa-restaurante-sync") {
         event.waitUntil(enviarAlReconectar());
     }
 });
-
+//intentar que se tengan todas las vistas y llamadas API cuando sea full sin conexion
 self.addEventListener("message", function (event) {
     if (event.data && event.data.type === "PRECARGAR_APIS") {
         const token = event.data.token;
         if (token) {
-            precargarAPIsAutenticadas(token);
+            Promise.all([
+                precargarAPIsAutenticadas(token),
+                cachearTodasLasVistasYCSS()
+            ]).then(() => {
+                console.log('Precarga completa: APIs, vistas y CSS cacheados');
+            });
         }
     }
 });
+async function cachearTodasLasVistasYCSS() {
+    const cache = await caches.open(cacheName);
+    const baseUrl = self.location.origin;
+    const todosLosRecursos = [...todasLasVistas, ...todosLosCSS];  
+    console.log('Cacheando vistas y CSS después del login...');  
+
+    const resultados = await Promise.allSettled(
+        todosLosRecursos.map(recurso => {
+            const url = new URL(recurso, baseUrl).href;
+            return cachearRecursoIndividual(cache, url);
+        })
+    );
+    const exitosos = resultados.filter(r => r.status === 'fulfilled' && r.value === true).length;
+    console.log(`Vistas y CSS cacheados después del login: ${exitosos} de ${todosLosRecursos.length}`);
+}
 
 async function precargarAPIsAutenticadas(token) {
     const apiCache = await caches.open(apiCacheName);
@@ -429,3 +493,4 @@ async function precargarAPIsAutenticadas(token) {
         }
     }
 }
+// se hizo lo que pudo, o intentado el se tengan tanto tras instalar/login, para el uso offline
