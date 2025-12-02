@@ -38,27 +38,6 @@ const urlsAlCache = [
 ];
 
 
-const apisPublicas = [
-    '/api/Productos/Todos',
-    '/api/Productos/Categorias'
-];
-async function precargarAPIsPublicas() {
-    const apiCache = await caches.open(apiCacheName);
-    
-    for (const apiUrl of apisPublicas) {
-        try {
-            const Url = new URL(apiUrl, self.location.origin).href;
-            const response = await fetch(Url);
-            if (response.ok) {
-                await apiCache.put(Url, response.clone());
-                console.log('API precargada:', apiUrl);
-            }
-        } catch (error) {
-            console.warn('No se pudo precargar API:', apiUrl, error);
-        }
-    }
-}
-
 // instalar service worker
 self.addEventListener("install", function (event) {
     event.waitUntil(
@@ -69,7 +48,6 @@ self.addEventListener("install", function (event) {
                     console.error("Error al cachear recursos:", error);
                 });
             }),
-            precargarAPIsPublicas()
         ]).then(function () {
             return self.skipWaiting();
         })
@@ -387,45 +365,4 @@ self.addEventListener("sync", function (event) {
     }
 });
 
-self.addEventListener("message", function (event) {
-    if (event.data && event.data.type === "PRECARGAR_APIS") {
-        const token = event.data.token;
-        if (token) {
-            precargarAPIsAutenticadas(token);
-        }
-    }
-});
 
-async function precargarAPIsAutenticadas(token) {
-    const apiCache = await caches.open(apiCacheName);
-    const baseUrl = self.location.origin;
-    const apisParaPrecargar = [
-        '/api/Productos/TodosAdmin',
-        '/api/Usuarios/ObtenerTodos',
-        '/api/Pedidos/Pendientes',
-        '/api/Pedidos/Enviados',
-        '/api/Pedidos/EnPreparacion',
-        '/api/Pedidos/Listo'
-    ];
-    
-    const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-    };
-    
-    for (const apiUrl of apisParaPrecargar) {
-        try {
-            const Url = new URL(apiUrl, baseUrl).href;
-            const response = await fetch(Url, { headers });
-            if (response.ok) {
-                const peticionCache = new Request(Url, { headers });
-                await apiCache.put(peticionCache, response.clone());
-                console.log('API autenticada precargada:', apiUrl);
-            } else {
-                console.log('API no disponible para este rol o error:', apiUrl, response.status);
-            }
-        } catch (error) {
-            console.warn('No se pudo precargar API autenticada:', apiUrl, error);
-        }
-    }
-}
