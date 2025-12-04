@@ -5,6 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema Restaurante</title>
     <link rel="manifest" href="/manifest.json">
+    <!--EN las pruebas que hicimos, que vimos no dejaba instalar a usuarios de IOs, le checamos investigamos
+        que puede ocupar estos "meta tags" e iconoss , para ver asegure si aparezca la opcion de instalacion y la compatibilidad, tambien para opera
+        e hicimos cambios manifest para que esté mas completo, que unos campos investigamos si funcionan en ciertos lugares
+        mientras que otros campos no se usan en otros
+    -->
+    <!--PD: Si ya vimos Opera no tiene aún soporte para PWAs, mientras que en Safari/IOs no se ha integrado tanto -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Restaurante">
+    <link rel="apple-touch-icon" href="/icons/192.png">
+    <link rel="apple-touch-icon" sizes="128x128" href="/icons/128.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/icons/512.png">
+     <link rel="apple-touch-startup-image" href="/icons/512.png">
+     <meta name="theme-color" content="#4A90E2">
+    <meta name="msapplication-TileColor" content="#4A90E2">
+    <meta name="msapplication-TileImage" content="/icons/192.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="/css/Home.css" rel="stylesheet" />
 </head>
